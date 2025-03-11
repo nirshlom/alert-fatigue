@@ -1,0 +1,7 @@
+# Ignore CSV and Excel files
+*.csv
+*.xlsx
+*.xls
+
+# Optional: Ignore temporary or backup Excel files
+~$*.xls*
