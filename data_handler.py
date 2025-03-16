@@ -23,11 +23,30 @@ profile.to_file("df_active_adult_profiling.html") # open "1_data_profiling.html"
 profile.to_notebook_iframe()
 
 
-##TODO: add the following to the data_handler.py
+#TODO: add the following to the data_handler.py
+src_active_patients_merged = pd.read_csv('alert_analysis/data/src_active_patients_merged.csv')
+src_active_patients_merged.shape
 
-##TODO: add the following to the data_handler.py number 2
+##TODO: create profile report for src_tbl1_active_by_patient_gb
+profile = ProfileReport(src_active_patients_merged, title="Data Profiling Report", explorative=True)
+profile.to_file("src_active_patients_merged_profiling.html")
+profile.to_notebook_iframe()
 
+#TODO: create the profile report seperately for the following columns:
+category_col = "gender_text_en_cat"
+
+# Loop through each unique category and generate a report
+for category in src_active_patients_merged[category_col].unique():
+    subset_df = src_active_patients_merged[src_tbl1_active_by_patient_gb[category_col] == category]  # Filter dataset for the category
+
+    # Generate Pandas Profiling report for this subset
+    profile = ProfileReport(subset_df, title=f"Pandas Profiling Report - {category}")
+
+    # Save the report to an HTML file
+    profile.to_file(f"profile_report_{category}.html")
+
+print("Reports generated successfully!")
 #  I would like to....
 
 
-
+src_active_patients_merged['atc_group'].value_counts()
