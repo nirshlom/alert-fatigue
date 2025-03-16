@@ -2,6 +2,8 @@
 *.csv
 *.xlsx
 *.xls
+*.html
+*.xhtml
 
 # Optional: Ignore temporary or backup Excel files
 ~$*.xls*
