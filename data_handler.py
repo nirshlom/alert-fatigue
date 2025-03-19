@@ -12,7 +12,7 @@ print(f'original df has {df.shape[0]} rows and {df.shape[1]} columns')
 # This is the data to work when analysing the active adult orders
 df_active_adult = pd.read_csv('alert_analysis/data/df_main_active_adult.csv')
 print(f'original df_active_adult has {df_active_adult.shape[0]} rows and {df_active_adult.shape[1]} columns')
-# original df_active_adult has 2543301 rows and 66 columns
+# original df_active_adult has 2,543,301 rows and 66 columns
 
 #test for duplicated ids:
 df_active_adult['id1'].duplicated().sum() > 0
@@ -49,7 +49,6 @@ print(f'src_tbl1_active_by_patient_gb has {src_tbl1_active_by_patient_gb.shape[0
       f' and {src_tbl1_active_by_patient_gb.shape[1]} variables')
 #src_tbl1_active_by_patient_gb has 155899 unique patients and 10 variables
 
-
 src_tbl1_active_by_patient_gb_to_merge = src_tbl1_active_by_patient_gb[[
     'id1' ,'hospitalname_en_cat_cnt', 'survivalrate10years_age_adj_mean',
     'medical_record_cat_cnt', 'nummedamount_calc_mean',
@@ -67,8 +66,8 @@ print(f'src_active_patients_merged has {src_active_patients_merged.shape[0]} ord
 
 src_active_patients_merged.head()
 
-#src_tbl1_active_by_patient_gb.to_csv('alert_analysis/data/src_tbl1_active_by_patient_gb.csv', index=False)
-#src_active_patients_merged.to_csv('alert_analysis/data/src_active_patients_merged.csv', index=False)
+# src_tbl1_active_by_patient_gb.to_csv('alert_analysis/data/src_tbl1_active_by_patient_gb.csv', index=False)
+# src_active_patients_merged.to_csv('alert_analysis/data/src_active_patients_merged.csv', index=False)
 
 #TODO: create profile report for df_active_adult
 profile = ProfileReport(df_active_adult, title="Data Profiling Report", explorative=True)
@@ -105,4 +104,20 @@ print("Reports generated successfully!")
 src_active_patients_merged['atc_group'].value_counts()
 
 src_active_patients_merged = pd.read_csv('alert_analysis/data/src_active_patients_merged.csv')
+
+#TODO: add the columns: Module_Alert_Rn, Alert_Message, DiagnosisInReception,
+# HospDiagnosis, Other_Text, Response, Answer_Text, hosp_days, num_of_alerts_per_order_id
+
+#TODO: cretae a new flat column below/ exceeds dose, the full logic is in Hiba_project_fatigue_alert.rmd
+# add Module_Alert_Rn and Alert_Message
+#add the logic below
+# ifelse(data_distincted_active_mode_stoping$Module_Alert_Rn == "DRC - Frequency 1" & grepl("exceeds",
+#                                                                                           data_distincted_active_mode_stoping$Alert_Message), "DRC - Frequency - exceeds ",
+#
+# ifelse(data_distincted_active_mode_stoping$Module_Alert_Rn == "DRC - Frequency 1" & grepl("below",
+#                                                                                           data_distincted_active_mode_stoping$Alert_Message), "DRC - Frequency - below",
+
+# Apply the same logic to "DRC - Single Dose 1"
+# Apply the same logic to "DRC - Max Daily Dose 1"
+
 
