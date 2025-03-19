@@ -120,4 +120,7 @@ src_active_patients_merged = pd.read_csv('alert_analysis/data/src_active_patient
 # Apply the same logic to "DRC - Single Dose 1"
 # Apply the same logic to "DRC - Max Daily Dose 1"
 
+#This is the main outcome to analyse
+df_active_adult['Alert_type'].value_counts()
+
 
