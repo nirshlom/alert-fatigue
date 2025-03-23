@@ -108,6 +108,11 @@ src_active_patients_merged = pd.read_csv('alert_analysis/data/src_active_patient
 #TODO: add the columns: Module_Alert_Rn, Alert_Message, DiagnosisInReception,
 # HospDiagnosis, Other_Text, Response, Answer_Text, hosp_days, num_of_alerts_per_order_id
 
+# calling the raw data:
+data_main = pd.read_csv('alert_analysis/data/main_data_2022/emek.data - Copy.csv')
+data_main.shape
+data_main.columns
+
 #TODO: cretae a new flat column below/ exceeds dose, the full logic is in Hiba_project_fatigue_alert.rmd
 # add Module_Alert_Rn and Alert_Message
 #add the logic below
@@ -122,5 +127,7 @@ src_active_patients_merged = pd.read_csv('alert_analysis/data/src_active_patient
 
 #This is the main outcome to analyse
 df_active_adult['Alert_type'].value_counts()
+
+
 
 
