@@ -172,7 +172,7 @@ data_distincted_main["Basic_Name_1st_word"] = data_distincted_main["Basic_Name"]
 # 2. Read and clean the Excel file for basic_atc
 # -------------------------------------------
 # Read the Excel file, treating "NULL" as missing values
-basic_atc = pd.read_excel("/Users/nirshlomo/Dropbox/PHD/alert-fatigue/alert_analysis/data/BASIC NAME - ATC CODE - Copy.xlsx",
+basic_atc = pd.read_excel("alert_analysis/data/BASIC NAME - ATC CODE - Copy.xlsx",
                             na_values="NULL")
 
 # Select only the relevant columns
