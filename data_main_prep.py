@@ -179,65 +179,176 @@ from datetime import datetime
 # --------------------------------------------------------
 # Convert AGE string to a numeric value using complex rules.
 import numpy as np
-def convert_age(age):
-    """
-    Convert an AGE string into a numeric value based on its length and pattern.
-    For 3-digit fully numeric strings (e.g., "105"), return the number directly.
-    Otherwise, construct a decimal string based on specified positions only if
-    those positions are digits; if not, return np.nan.
-    """
-    s = str(age)
+# def convert_age(age):
+#     """
+#     Convert an AGE string into a numeric value based on its length and pattern.
+#     For 3-digit fully numeric strings (e.g., "105"), return the number directly.
+#     Otherwise, construct a decimal string based on specified positions only if
+#     those positions are digits; if not, return np.nan.
+#     """
+#     s = str(age)
+#     n = len(s)
+#
+#     # If it's a 3-digit fully numeric string, handle it as 100+ age.
+#     if n == 3 and s.isdigit():
+#         return float(s)
+#
+#     result = None
+#     try:
+#         if n == 6:
+#             # Expect first and fifth characters to be digits.
+#             if s[0].isdigit() and s[4].isdigit():
+#                 result = f"{s[0]}.{s[4]}"
+#         elif n == 7:
+#             if s[0].isdigit() and s[1].isdigit():
+#                 if s[5].isdigit():
+#                     result = f"{s[0:2]}.{s[5]}"
+#             elif s[0].isdigit() and not s[1].isdigit():
+#                 if s[4:6].isdigit():
+#                     result = f"{s[0]}.{s[4:6]}"
+#         elif n == 8:
+#             if s[0:2].isdigit() and s[5:7].isdigit():
+#                 result = f"{s[0:2]}.{s[5:7]}"
+#         elif n == 3:
+#             # When not fully numeric, check the second character.
+#             if not s[1].isdigit():
+#                 if s[0].isdigit():
+#                     result = f"0.0{s[0]}"
+#             else:
+#                 if s[0:2].isdigit():
+#                     result = f"0.{s[0:2]}"
+#         elif n == 4:
+#             if s[0:2].isdigit():
+#                 result = s[0:2]
+#         elif n == 2:
+#             if not s[1].isdigit():
+#                 if s[0].isdigit():
+#                     result = s[0]
+#             else:
+#                 if s.isdigit():
+#                     result = s
+#
+#         # If no valid result was generated, return np.nan
+#         if result is None:
+#             return np.nan
+#         return float(result)
+#     except Exception:
+#         return np.nan
+#
+#
+# # Now apply the function to the AGE column:
+# data_main['AGE_num'] = data_main['AGE'].apply(convert_age)
+
+import pandas as pd
+import numpy as np
+import re
+
+# Define a function to convert the AGE string to a numeric value based on its length and content.
+def convert_age(age_str):
+    # If the age value is missing, return NaN
+    if pd.isna(age_str):
+        return np.nan
+    # Convert to string and get its length
+    s = str(age_str)
     n = len(s)
 
-    # If it's a 3-digit fully numeric string, handle it as 100+ age.
-    if n == 3 and s.isdigit():
-        return float(s)
-
-    result = None
-    try:
-        if n == 6:
-            # Expect first and fifth characters to be digits.
-            if s[0].isdigit() and s[4].isdigit():
-                result = f"{s[0]}.{s[4]}"
-        elif n == 7:
-            if s[0].isdigit() and s[1].isdigit():
-                if s[5].isdigit():
-                    result = f"{s[0:2]}.{s[5]}"
-            elif s[0].isdigit() and not s[1].isdigit():
-                if s[4:6].isdigit():
-                    result = f"{s[0]}.{s[4:6]}"
-        elif n == 8:
-            if s[0:2].isdigit() and s[5:7].isdigit():
-                result = f"{s[0:2]}.{s[5:7]}"
-        elif n == 3:
-            # When not fully numeric, check the second character.
-            if not s[1].isdigit():
-                if s[0].isdigit():
-                    result = f"0.0{s[0]}"
-            else:
-                if s[0:2].isdigit():
-                    result = f"0.{s[0:2]}"
-        elif n == 4:
-            if s[0:2].isdigit():
-                result = s[0:2]
-        elif n == 2:
-            if not s[1].isdigit():
-                if s[0].isdigit():
-                    result = s[0]
-            else:
-                if s.isdigit():
-                    result = s
-
-        # If no valid result was generated, return np.nan
-        if result is None:
+    # 1. If the string has exactly 6 characters:
+    #    - Take the first character and the 5th character (index 0 and 4),
+    #      join them with a dot and convert to float.
+    if n == 6:
+        try:
+            return float(f"{s[0]}.{s[4]}")
+        except ValueError:
             return np.nan
-        return float(result)
-    except Exception:
+
+    # 2. If the string has exactly 7 characters AND:
+    #    - The first character is a digit AND the second character is also a digit,
+    #      then take the first two characters and the 6th character (index 5).
+    if n == 7 and s[0].isdigit() and s[1].isdigit():
+        try:
+            return float(f"{s[:2]}.{s[5]}")
+        except ValueError:
+            return np.nan
+
+    # 3. If the string has exactly 7 characters AND:
+    #    - The first character is a digit BUT the second character is NOT a digit,
+    #      then take the first character and the 5th & 6th characters (indexes 4 and 5).
+    if n == 7 and s[0].isdigit() and (not s[1].isdigit()):
+        try:
+            return float(f"{s[0]}.{s[4:6]}")
+        except ValueError:
+            return np.nan
+
+    # 4. If the string has exactly 8 characters:
+    #    - Take the first two characters and the 6th & 7th characters (indexes 5 and 6).
+    if n == 8:
+        try:
+            return float(f"{s[:2]}.{s[5:7]}")
+        except ValueError:
+            return np.nan
+
+    # 5. If the string has exactly 3 characters AND the second character is NOT a digit:
+    #    - Concatenate "0", ".0", and the first character. (E.g., "A12" becomes "0.0A".)
+    #      Note: In practice, the string should represent a number; this mirrors the R behavior.
+    if n == 3 and (not s[1].isdigit()):
+        try:
+            return float(f"0.0{s[0]}")
+        except ValueError:
+            return np.nan
+
+    # 6. If the string has exactly 3 characters AND the second character IS a digit:
+    #    - Concatenate "0", ".", and the first two characters.
+    if n == 3 and s[1].isdigit():
+        try:
+            return float(f"0.{s[:2]}")
+        except ValueError:
+            return np.nan
+
+    # 7. If the string has exactly 4 characters:
+    #    - Simply take the first two characters and convert to float.
+    if n == 4:
+        try:
+            return float(s[:2])
+        except ValueError:
+            return np.nan
+
+    # 8. If the string has exactly 2 characters AND the second character is not a digit:
+    #    - Take the first character and convert it.
+    if n == 2 and (not s[1].isdigit()):
+        try:
+            return float(s[0])
+        except ValueError:
+            return np.nan
+
+    # Default: if none of the above conditions match, try converting the whole string to a float.
+    try:
+        return float(s)
+    except ValueError:
         return np.nan
 
 
-# Now apply the function to the AGE column:
+# Define a function to handle cases where the AGE string represents a three-digit number (100+).
+def handle_hundred(age_str, current_value):
+    # If the age value is missing, return the current converted value.
+    if pd.isna(age_str):
+        return current_value
+    s = str(age_str)
+    # If the string is exactly three digits (e.g., "101"), then convert the entire string directly.
+    if len(s) == 3 and re.match(r'^\d{3}$', s):
+        try:
+            return float(s)
+        except ValueError:
+            return current_value
+    # Otherwise, keep the value computed by convert_age.
+    return current_value
+
+
+# Assume data_main is your pandas DataFrame and it has an 'AGE' column.
+# First, apply the conversion function to create a new column 'AGE_num'
 data_main['AGE_num'] = data_main['AGE'].apply(convert_age)
+
+# override the value for rows where AGE is a three-digit number (i.e. 100+)
+data_main['AGE_num'] = data_main.apply(lambda row: handle_hundred(row['AGE'], row['AGE_num']), axis=1)
 
 # --------------------------------------------------------
 # Convert Gender_Text to categorical and map to English labels.

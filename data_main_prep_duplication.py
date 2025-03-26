@@ -236,8 +236,10 @@ test = data_distincted_main_new[[
 # -------------------------------------------
 # 7. Write the final DataFrame to a CSV file
 # -------------------------------------------
-# data_distincted_main_new.to_csv('alert_analysis/data_process/data_distincted_main_new_raw_1.csv',
-#                                 index=False)
+data_distincted_main_new.to_csv(
+    'alert_analysis/data_process/data_distincted_main_new_raw_1.csv',
+                                index=False
+)
 
 import numpy as np
 
@@ -370,8 +372,10 @@ import pandas as pd
 # -------------------------------
 # 1. Create num_of_diagnosis Column
 # -------------------------------
-# Split the 'HospDiagnosis' string by ";" and count the resulting parts.
-data_distincted_main_new["num_of_diagnosis"] = data_distincted_main_new["HospDiagnosis"].str.split(";").apply(len)
+# Split the 'HospDiagnosis' string by ";" and count the resulting parts. if 'NA', set to 0.
+data_distincted_main_new["num_of_diagnosis"] = data_distincted_main_new["HospDiagnosis"].apply(
+    lambda x: 0 if x == "NA" else len(x.split(";"))
+)
 
 # -------------------------------
 # 2. Create diseaseSplit Column
@@ -581,6 +585,12 @@ data_distincted_main_new["Charlson_score"] = data_distincted_main_new[
 #    - If between 60 and 69, add 2.
 #    - If between 70 and 79, add 3.
 #    - If 80 or above, add 4.
+
+# Convert 'AGE_num' to numeric, turning anything non-convertible (like "NA") into NaN.
+data_distincted_main_new["AGE_num"] = pd.to_numeric(
+    data_distincted_main_new["AGE_num"], errors="coerce"
+)
+
 conditions = [
     (data_distincted_main_new["AGE_num"] >= 50) & (data_distincted_main_new["AGE_num"] <= 59),
     (data_distincted_main_new["AGE_num"] >= 60) & (data_distincted_main_new["AGE_num"] <= 69),
