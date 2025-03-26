@@ -677,6 +677,9 @@ def determine_alert_status(row):
 flat_by_sevirity["Alert_status"] = flat_by_sevirity.apply(determine_alert_status, axis=1)
 flat_by_sevirity["Alert_status"] = flat_by_sevirity["Alert_status"].astype("category")
 
+#flat_by_sevirity.to_csv('alert_analysis/data_process/flat_by_sevirity_alerts.csv', index=False)
+flat_by_sevirity = pd.read_csv('alert_analysis/data_process/flat_by_sevirity_alerts.csv')
+
 # Create test_Alert_status subset & group by
 test_Alert_status = flat_by_sevirity[
     ["Order_ID_new_update", "ResponseType_cat", "Alert_type", "Alert_status"]
