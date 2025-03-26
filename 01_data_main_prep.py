@@ -587,5 +587,5 @@ data_main['ResponseType_cat'] = data_main['ResponseType_cat'].astype('category')
 
 #--------------------------------------------------------
 data_main.shape #(4730108, 72)
-## END of data_main_prep.py
+## END of 01_data_main_prep.py
 data_main.to_csv('alert_analysis/data_process/data_main_prep.csv', index=False)
