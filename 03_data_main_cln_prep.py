@@ -326,11 +326,14 @@ flat_by_sevirity = pd.merge(
     how="left"
 )
 
+
+flat_by_sevirity.to_csv('alert_analysis/data_process/flat_by_sevirity.csv', index=False)
+flat_by_sevirity.shape # (3737601, 47)
+assert flat_by_sevirity.shape[0] == 3737601, "The number of rows is incorrect."
+
 # -----------------------------------------------------------------------------
 # OPTIONAL: INSPECT THE RESULT
 # -----------------------------------------------------------------------------
-print(flat_by_sevirity.head(10))
-
 import pandas as pd
 import numpy as np
 
@@ -392,32 +395,52 @@ flat_by_sevirity["Technical_alerts"] = flat_by_sevirity["Technical_alerts"].asty
 #
 # In Python, we can use np.where(...) and convert to categorical.
 
-flat_by_sevirity["DAM_CAT"] = np.where(flat_by_sevirity["DAM"] != 0, 1, 0).astype("category")
-flat_by_sevirity["DDI_Contraindicated_Drug_Combination_CAT"] = np.where(
-    flat_by_sevirity["DDI_Contraindicated_Drug_Combination"] != 0, 1, 0
-).astype("category")
-flat_by_sevirity["DDI_Moderate_Interaction_CAT"] = np.where(
-    flat_by_sevirity["DDI_Moderate_Interaction"] != 0, 1, 0
-).astype("category")
-flat_by_sevirity["DDI_Severe_Interaction_CAT"] = np.where(
-    flat_by_sevirity["DDI_Severe_Interaction"] != 0, 1, 0
-).astype("category")
-flat_by_sevirity["DRC_CAT"] = np.where(flat_by_sevirity["DRC"] != 0, 1, 0).astype("category")
+flat_by_sevirity["DAM_CAT"] = (
+        flat_by_sevirity["DAM"] != 0
+).astype(int).astype("category")
+
+flat_by_sevirity["DDI_Contraindicated_Drug_Combination_CAT"] = (
+    (flat_by_sevirity["DDI_Contraindicated_Drug_Combination"] != 0)
+    .astype(int)
+    .astype("category")
+)
+
+flat_by_sevirity["DDI_Moderate_Interaction_CAT"] = (
+    (flat_by_sevirity["DDI_Moderate_Interaction"] != 0)
+    .astype(int)
+    .astype("category")
+)
+
+flat_by_sevirity["DDI_Severe_Interaction_CAT"] = (
+    (flat_by_sevirity["DDI_Severe_Interaction"] != 0)
+    .astype(int)
+    .astype("category")
+)
+
+flat_by_sevirity["DRC_CAT"] = (
+    (flat_by_sevirity["DRC"] != 0)
+    .astype(int)
+    .astype("category")
+)
 
 # If you need "DT_CAT" when the data has "DT", just replicate similarly.
 # flat_by_sevirity["DT_CAT"] = np.where(flat_by_sevirity["DT"] != 0, 1, 0).astype("category")
 
-flat_by_sevirity["Technical_alerts_CAT"] = np.where(
-    flat_by_sevirity["Technical_alerts"] != "0", 1, 0
-).astype("category")
+flat_by_sevirity["Technical_alerts_CAT"] = (
+    (flat_by_sevirity["Technical_alerts"] != 0)  # Boolean (True/False)
+    .astype(int)                                   # Convert True/False -> 1/0
+    .astype("category")                            # Cast to categorical dtype
+)
 
 # If you have a "NeoDRC" column from pivot:
 # flat_by_sevirity["NeoDRC_CAT"] = np.where(flat_by_sevirity["NeoDRC"] != 0, 1, 0).astype("category")
 # (Uncomment if "NeoDRC" was indeed part of your pivot.)
 
-flat_by_sevirity["Renal_alerts_CAT"] = np.where(
-    flat_by_sevirity["Renal_alerts"] != "0", 1, 0
-).astype("category")
+flat_by_sevirity["Renal_alerts_CAT"] = (
+    (flat_by_sevirity["Renal_alerts"] != 0)
+    .astype(int)
+    .astype("category")
+)
 
 # -----------------------------------------------------------------------------
 # 4) ADD "chronic_num_calc" USING GROUPED LOGIC
