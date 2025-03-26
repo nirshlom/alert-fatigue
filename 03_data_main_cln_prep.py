@@ -679,6 +679,7 @@ flat_by_sevirity["Alert_status"] = flat_by_sevirity["Alert_status"].astype("cate
 
 #flat_by_sevirity.to_csv('alert_analysis/data_process/flat_by_sevirity_alerts.csv', index=False)
 flat_by_sevirity = pd.read_csv('alert_analysis/data_process/flat_by_sevirity_alerts.csv')
+assert flat_by_sevirity.shape[0] == 3737601, "The number of rows is incorrect."
 
 # Create test_Alert_status subset & group by
 test_Alert_status = flat_by_sevirity[
@@ -748,6 +749,7 @@ condition_filter = (
     (flat_by_sevirity["DRC_Single_Dose_1"] < 2) &
     (flat_by_sevirity["DRC_Max_Daily_Dose_1"] < 2)
 )
+flat_by_sevirity_filtered = flat_by_sevirity[condition_filter]
 flat_by_sevirity = flat_by_sevirity[condition_filter]
 
 # -----------------------------------------------------------------------------
