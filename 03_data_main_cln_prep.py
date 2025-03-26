@@ -396,29 +396,29 @@ flat_by_sevirity["Technical_alerts"] = flat_by_sevirity["Technical_alerts"].asty
 # In Python, we can use np.where(...) and convert to categorical.
 
 flat_by_sevirity["DAM_CAT"] = (
-        flat_by_sevirity["DAM"] != 0
+        flat_by_sevirity["DAM"] > 0
 ).astype(int).astype("category")
 
 flat_by_sevirity["DDI_Contraindicated_Drug_Combination_CAT"] = (
-    (flat_by_sevirity["DDI_Contraindicated_Drug_Combination"] != 0)
+    (flat_by_sevirity["DDI_Contraindicated_Drug_Combination"] > 0)
     .astype(int)
     .astype("category")
 )
 
 flat_by_sevirity["DDI_Moderate_Interaction_CAT"] = (
-    (flat_by_sevirity["DDI_Moderate_Interaction"] != 0)
+    (flat_by_sevirity["DDI_Moderate_Interaction"] > 0)
     .astype(int)
     .astype("category")
 )
 
 flat_by_sevirity["DDI_Severe_Interaction_CAT"] = (
-    (flat_by_sevirity["DDI_Severe_Interaction"] != 0)
+    (flat_by_sevirity["DDI_Severe_Interaction"] > 0)
     .astype(int)
     .astype("category")
 )
 
 flat_by_sevirity["DRC_CAT"] = (
-    (flat_by_sevirity["DRC"] != 0)
+    (flat_by_sevirity["DRC"] > 0)
     .astype(int)
     .astype("category")
 )
@@ -426,21 +426,16 @@ flat_by_sevirity["DRC_CAT"] = (
 # If you need "DT_CAT" when the data has "DT", just replicate similarly.
 # flat_by_sevirity["DT_CAT"] = np.where(flat_by_sevirity["DT"] != 0, 1, 0).astype("category")
 
-flat_by_sevirity["Technical_alerts_CAT"] = (
-    (flat_by_sevirity["Technical_alerts"] != 0)  # Boolean (True/False)
-    .astype(int)                                   # Convert True/False -> 1/0
-    .astype("category")                            # Cast to categorical dtype
-)
+flat_by_sevirity['Technical_alerts_CAT'] = flat_by_sevirity[
+    'Technical_alerts'
+].apply(lambda x: 1 if x > 0 else 0).astype("category")
 
 # If you have a "NeoDRC" column from pivot:
 # flat_by_sevirity["NeoDRC_CAT"] = np.where(flat_by_sevirity["NeoDRC"] != 0, 1, 0).astype("category")
 # (Uncomment if "NeoDRC" was indeed part of your pivot.)
 
-flat_by_sevirity["Renal_alerts_CAT"] = (
-    (flat_by_sevirity["Renal_alerts"] != 0)
-    .astype(int)
-    .astype("category")
-)
+flat_by_sevirity["Renal_alerts_CAT"] = flat_by_sevirity["Renal_alerts"].apply(lambda x: 1 if x > 0 else 0).astype("category")
+
 
 # -----------------------------------------------------------------------------
 # 4) ADD "chronic_num_calc" USING GROUPED LOGIC
@@ -595,9 +590,6 @@ flat_by_sevirity = flat_by_sevirity.merge(
 
 print(flat_by_sevirity.head(10))
 
-import pandas as pd
-import numpy as np
-
 # -----------------------------------------------------------------------------
 # 1) CREATE A NEW FACTOR 'Alert_type'
 # -----------------------------------------------------------------------------
@@ -678,7 +670,7 @@ flat_by_sevirity["Alert_status"] = flat_by_sevirity.apply(determine_alert_status
 flat_by_sevirity["Alert_status"] = flat_by_sevirity["Alert_status"].astype("category")
 
 #flat_by_sevirity.to_csv('alert_analysis/data_process/flat_by_sevirity_alerts.csv', index=False)
-flat_by_sevirity = pd.read_csv('alert_analysis/data_process/flat_by_sevirity_alerts.csv')
+#flat_by_sevirity = pd.read_csv('alert_analysis/data_process/flat_by_sevirity_alerts.csv')
 assert flat_by_sevirity.shape[0] == 3737601, "The number of rows is incorrect."
 
 # Create test_Alert_status subset & group by
@@ -745,12 +737,14 @@ flat_by_sevirity.rename(columns=rename_map, inplace=True)
 
 # Filter rows
 condition_filter = (
-    (flat_by_sevirity["DRC_Frequency_1"] < 2) &
-    (flat_by_sevirity["DRC_Single_Dose_1"] < 2) &
-    (flat_by_sevirity["DRC_Max_Daily_Dose_1"] < 2)
+    ((flat_by_sevirity["DRC_Frequency_1"] < 2) | (flat_by_sevirity["DRC_Frequency_1"].isnull())) &
+    ((flat_by_sevirity["DRC_Single_Dose_1"] < 2) | (flat_by_sevirity["DRC_Single_Dose_1"].isnull())) &
+    ((flat_by_sevirity["DRC_Max_Daily_Dose_1"] < 2) | (flat_by_sevirity["DRC_Max_Daily_Dose_1"].isnull()))
 )
+
+
 flat_by_sevirity_filtered = flat_by_sevirity[condition_filter]
-flat_by_sevirity = flat_by_sevirity[condition_filter]
+#flat_by_sevirity = flat_by_sevirity[condition_filter]
 
 # -----------------------------------------------------------------------------
 # 6) GROUP BY Order_ID_new_update => total_count, REMOVE DUPLICATES
@@ -763,7 +757,7 @@ flat_by_sevirity = flat_by_sevirity[condition_filter]
 #                                   !is.na(flat_by_sevirity$Order_ID_new_update), ]
 
 unique_VALIDATION = (
-    flat_by_sevirity
+    flat_by_sevirity_filtered
     .groupby("Order_ID_new_update", as_index=False)
     .size()
     .rename(columns={"size": "total_count"})
@@ -771,7 +765,7 @@ unique_VALIDATION = (
 
 unique_to_delete = unique_VALIDATION.loc[unique_VALIDATION["total_count"] == 2, "Order_ID_new_update"]
 
-test_final2 = flat_by_sevirity[
+test_final2 = flat_by_sevirity_filtered[
     (~flat_by_sevirity["Order_ID_new_update"].isin(unique_to_delete)) &
     (flat_by_sevirity["Order_ID_new_update"].notna())
 ].copy()
@@ -817,7 +811,7 @@ test_Time_diff = flat_by_sevirity[
 # test_hiba.to_csv(r"C:/Users/Keren/Desktop/Fatigue_alert/Data/Main_data_2022/df_main_flat.csv", index=False)
 
 # For demonstration only (uncomment if/when you wish to write the file):
-# test_hiba.to_csv("C:/Users/Keren/Desktop/Fatigue_alert/Data/Main_data_2022/df_main_flat.csv", index=False)
+test_hiba.to_csv("C:/Users/Keren/Desktop/Fatigue_alert/Data/Main_data_2022/df_main_flat_py_version.csv", index=False)
 
 # -----------------------------------------------------------------------------
 # DONE.
