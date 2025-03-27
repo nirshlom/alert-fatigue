@@ -123,7 +123,13 @@ data_distincted_main = data_distincted_main[select_cols]
 # Step 3: Creating an ATC count column and filtering rows
 # -------------------------------
 # Count the number of ATC codes in the 'ATC' column by splitting on commas
-data_distincted_main['ATC_cnt'] = data_distincted_main['ATC'].apply(lambda x: len(str(x).split(',')))
+data_distincted_main['ATC_cnt'] = (
+    data_distincted_main['ATC']
+    .str.split(',')
+    .apply(lambda codes:
+        len([c for c in codes if c.strip() not in ['', 'NA']])
+    )
+)
 
 # Remove rows with 3 or more ATC codes
 data_distincted_main = data_distincted_main[data_distincted_main['ATC_cnt'] < 3]
@@ -172,8 +178,7 @@ data_distincted_main["Basic_Name_1st_word"] = data_distincted_main["Basic_Name"]
 # 2. Read and clean the Excel file for basic_atc
 # -------------------------------------------
 # Read the Excel file, treating "NULL" as missing values
-basic_atc = pd.read_excel("alert_analysis/data/BASIC NAME - ATC CODE - Copy.xlsx",
-                            na_values="NULL")
+basic_atc = pd.read_csv("alert_analysis/data/BASIC_NAME_ATC.csv")
 
 # Select only the relevant columns
 basic_atc = basic_atc[["ATC5", "BASIC NAME"]]
@@ -273,6 +278,8 @@ data_distincted_main_new['Order_ID_new_update'] = np.where(
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+
+#TODO: validation above is completed - now we will continue with the rest of the code
 
 # -------------------------------
 # 1. Create ATC_GROUP Column
