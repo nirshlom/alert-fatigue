@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+
 data_main = pd.read_csv('alert_analysis/data_process/data_main_prep.csv')
 
 # -------------------------------
@@ -221,13 +223,25 @@ data_distincted_main_new["ATC_NEW"] = np.where(
 )
 
 # Second condition: if (Drug_Header_cat_1st_word != Basic_Name_1st_word) and OrderOrigin is 'Chronic Meds', then ensure ATC_NEW is ATC5.
-mask = (data_distincted_main_new["Drug_Header_cat_1st_word"] != data_distincted_main_new["Basic_Name_1st_word"]) & \
-       (data_distincted_main_new["OrderOrigin"] == 'Chronic Meds')
-data_distincted_main_new.loc[mask, "ATC_NEW"] = data_distincted_main_new.loc[mask, "ATC5"]
+data_distincted_main_new["ATC_NEW"] = np.where(
+    (
+        (data_distincted_main_new["Drug_Header_cat_1st_word"]
+         != data_distincted_main_new["Basic_Name_1st_word"])
+        & (data_distincted_main_new["OrderOrigin"] == "Chronic Meds")
+    ),
+    data_distincted_main_new["ATC5"],
+    data_distincted_main_new["ATC_cln"]
+)
 
 # Third condition: if OrderOrigin is 'Chronic Meds' and ATC5 is missing, then set ATC_NEW to ATC_cln.
-mask2 = (data_distincted_main_new["OrderOrigin"] == 'Chronic Meds') & (data_distincted_main_new["ATC5"].isna())
-data_distincted_main_new.loc[mask2, "ATC_NEW"] = data_distincted_main_new.loc[mask2, "ATC_cln"]
+data_distincted_main_new["ATC_NEW"] = np.where(
+    (
+        (data_distincted_main_new["OrderOrigin"] == "Chronic Meds")
+        & (data_distincted_main_new["ATC5"].isna())
+    ),
+    data_distincted_main_new["ATC_cln"],
+    data_distincted_main_new["ATC_NEW"]
+)
 
 # -------------------------------------------
 # 6. Validate the join by selecting a subset of columns for testing
@@ -246,8 +260,6 @@ data_distincted_main_new.to_csv(
                                 index=False
 )
 
-import numpy as np
-
 # -------------------------------
 # 1. Sort the DataFrame
 # -------------------------------
@@ -257,11 +269,23 @@ data_distincted_main_new.sort_values(by=["Order_ID_new", "ATC_NEW"], inplace=Tru
 # -------------------------------
 # 2. Create the cnt_chronic_id Column
 # -------------------------------
+
 # For each group (by Order_ID_new), compute a cumulative sum that increments
 # every time the value in ATC_NEW changes from the previous row.
+#TODO: this is a very slow operation - we will need to find a way to optimize it
 data_distincted_main_new['cnt_chronic_id'] = data_distincted_main_new.groupby('Order_ID_new')['ATC_NEW'].transform(
     lambda s: (s != s.shift(1).fillna(s.iloc[0])).cumsum()
 )
+
+# I need to check this suggested option:
+# data_distincted_main_new.sort_values('Order_ID_new', inplace=True)
+#
+# # Create a boolean mask where the value changes within the same group.
+# mask = (data_distincted_main_new['ATC_NEW'] != data_distincted_main_new['ATC_NEW'].shift(1)) & \
+#        (data_distincted_main_new['Order_ID_new'] == data_distincted_main_new['Order_ID_new'].shift(1))
+#
+# # Compute the cumulative sum on the mask (converted to int) within each group.
+# data_distincted_main_new['cnt_chronic_id'] = mask.astype(int).groupby(data_distincted_main_new['Order_ID_new']).cumsum()
 
 # -------------------------------
 # 3. Update Order_ID_new_update Column
@@ -275,11 +299,10 @@ data_distincted_main_new['Order_ID_new_update'] = np.where(
     data_distincted_main_new['Order_ID_new']
 )
 
-import numpy as np
+
 import pandas as pd
 import matplotlib.pyplot as plt
 
-#TODO: validation above is completed - now we will continue with the rest of the code
 
 # -------------------------------
 # 1. Create ATC_GROUP Column
@@ -324,7 +347,7 @@ atc_mapping = [
 ]
 
 # Ensure missing values in ATC_NEW are filled (if applicable)
-data_distincted_main_new["ATC_NEW"] = data_distincted_main_new["ATC_NEW"].fillna("")
+#data_distincted_main_new["ATC_NEW"] = data_distincted_main_new["ATC_NEW"].fillna("")
 
 # Convert each condition to a NumPy boolean array
 conditions = [
@@ -336,6 +359,11 @@ choices = [group for _, group in atc_mapping]
 # Now np.select should work correctly:
 data_distincted_main_new["ATC_GROUP"] = np.select(conditions, choices, default="OTHER")
 
+data_distincted_main_new.to_csv(
+    'alert_analysis/data_process/data_distincted_main_new_raw_2.csv',
+                                index=False
+)
+
 # -------------------------------
 # 2. Plot Histogram for Original NumMedAmount (Optional)
 # -------------------------------
@@ -345,24 +373,30 @@ plt.xlabel("NumMedAmount")
 plt.ylabel("Frequency")
 plt.show()
 
+#TODO: validation above is completed - now we will continue with the rest of the code
+
 # -------------------------------
 # 3. Calculate the Number of Medications per Patient
 # -------------------------------
 # Convert Medical_Record to a categorical type for efficiency
-data_distincted_main_new['Medical_Record_cat'] = data_distincted_main_new['Medical_Record'].astype('category')
+#data_distincted_main_new['Medical_Record_cat'] = data_distincted_main_new['Medical_Record'].astype('category')
 
 # In the R code, the first summarization groups by Medical_Record_cat and Order_ID_new_update,
 # then counts the number of unique order groups per patient.
 # We calculate the number of unique Order_ID_new_update per Medical_Record_cat.
-num_med_df = (data_distincted_main_new
-              .groupby('Medical_Record_cat')['Order_ID_new_update']
-              .nunique()
-              .reset_index(name='NumMedAmount_calc'))
+# num_med_df = (data_distincted_main_new
+#               .groupby('Medical_Record')['Order_ID_new_update']
+#               .nunique()
+#               .reset_index(name='NumMedAmount_calc'))
+
+num_med_df = data_distincted_main_new.groupby(
+    ['Medical_Record', 'Order_ID_new_update']
+).size().reset_index(name='NumMedAmount_calc')
 
 # -------------------------------
 # 4. Join the Calculated Medication Count Back to the Main DataFrame
 # -------------------------------
-data_distincted_main_new = data_distincted_main_new.merge(num_med_df, on='Medical_Record_cat', how='left')
+data_distincted_main_new = data_distincted_main_new.merge(num_med_df, on='Medical_Record', how='left')
 
 # -------------------------------
 # 5. Plot Histogram for Calculated Number of Medications (Optional)
