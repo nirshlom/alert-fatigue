@@ -363,6 +363,10 @@ data_distincted_main_new.to_csv(
     'alert_analysis/data_process/data_distincted_main_new_raw_2.csv',
                                 index=False
 )
+import pandas as pd
+import numpy as np
+
+#data_distincted_main_new = pd.read_csv('alert_analysis/data_process/data_distincted_main_new_raw_2.csv')
 
 # -------------------------------
 # 2. Plot Histogram for Original NumMedAmount (Optional)
@@ -380,7 +384,6 @@ plt.show()
 # -------------------------------
 # Convert Medical_Record to a categorical type for efficiency
 #data_distincted_main_new['Medical_Record_cat'] = data_distincted_main_new['Medical_Record'].astype('category')
-
 # In the R code, the first summarization groups by Medical_Record_cat and Order_ID_new_update,
 # then counts the number of unique order groups per patient.
 # We calculate the number of unique Order_ID_new_update per Medical_Record_cat.
@@ -393,10 +396,12 @@ num_med_df = data_distincted_main_new.groupby(
     ['Medical_Record', 'Order_ID_new_update']
 ).size().reset_index(name='NumMedAmount_calc')
 
+num_med_df_2 = num_med_df.groupby('Medical_Record').size().reset_index(name='NumMedAmount_calc')
+
 # -------------------------------
 # 4. Join the Calculated Medication Count Back to the Main DataFrame
 # -------------------------------
-data_distincted_main_new = data_distincted_main_new.merge(num_med_df, on='Medical_Record', how='left')
+data_distincted_main_new = data_distincted_main_new.merge(num_med_df_2, on='Medical_Record', how='left')
 
 # -------------------------------
 # 5. Plot Histogram for Calculated Number of Medications (Optional)
@@ -407,15 +412,26 @@ plt.xlabel("NumMedAmount_calc")
 plt.ylabel("Frequency")
 plt.show()
 
-import numpy as np
-import pandas as pd
 
+data_distincted_main_new.to_csv(
+    'alert_analysis/data_process/data_distincted_main_new_raw_3.csv',
+                                index=False
+)
+
+import pandas as pd
+import numpy as np
+
+#data_distincted_main_new = pd.read_csv('alert_analysis/data_process/data_distincted_main_new_raw_3.csv')
 # -------------------------------
 # 1. Create num_of_diagnosis Column
 # -------------------------------
 # Split the 'HospDiagnosis' string by ";" and count the resulting parts. if 'NA', set to 0.
-data_distincted_main_new["num_of_diagnosis"] = data_distincted_main_new["HospDiagnosis"].apply(
-    lambda x: 0 if x == "NA" else len(x.split(";"))
+#TODO: important note: In the R code, NAs are counted as 1 diagnosis. Here, we are counting them as 0.
+data_distincted_main_new["num_of_diagnosis"] = np.where(
+    data_distincted_main_new["HospDiagnosis"].isna() |
+    (data_distincted_main_new["HospDiagnosis"] == "NA"),
+    0,
+    data_distincted_main_new["HospDiagnosis"].str.split(";").str.len()
 )
 
 # -------------------------------
@@ -473,9 +489,9 @@ def count_keyword(ds, keyword):
     """
     Counts how many times the substring `keyword` appears in the list ds.
     """
-    if ds is None:
+    if not isinstance(ds, list):
         return 0
-    return sum(1 for s in ds if keyword in s)
+    return sum(1 for s in ds if isinstance(s, str) and keyword in s)
 
 # Create a new column for each keyword in my_list with the suffix "_count"
 for item in my_list:
@@ -586,90 +602,98 @@ import numpy as np
 import pandas as pd
 
 # =================== Calculate Charlson Comorbidity Index Scores ===================
+from charlson_index import calculate_cci
 
-# 1. Calculate the 1- and 3-point sum
-cols_sum1 = [
-    'MYOCARDIAL_count',
-    "HEART FAILURE_count",
-    "PVD_group_cnt",
-    "CEREBROVASCULAR_group_cnt",
-    'DEMENTIA_count',
-    "COPD_group_cnt",
-    "GOUT_group_cnt",
-    "ULCER_group_cnt",
-    "liver_group_cnt"
-]
-data_distincted_main_new["charls_sum1_3_points"] = data_distincted_main_new[cols_sum1].sum(axis=1)
+data_distincted_main_new_with_cci = calculate_cci(data_distincted_main_new)
 
-# 2. Calculate the 2-point sum and multiply by 2
-cols_sum2 = [
-    "HEMIPLEGIA_group_cnt",
-    "RENAL_group_cnt",
-    "MALIGNANCY_group_cnt",
-    "LEUKEMIA_group_cnt",
-    "LYMPHOMA_count",
-    'DIABETES_count'
-]
-data_distincted_main_new["charls_sum2points"] = data_distincted_main_new[cols_sum2].sum(axis=1) * 2
-
-# 3. Calculate the 6-point sum and multiply by 6
-cols_sum6 = ['HIV_count', 'METASTATIC_group_cnt']
-data_distincted_main_new["charls_sum6points"] = data_distincted_main_new[cols_sum6].sum(axis=1) * 6
-
-# 4. Total Charlson score is the sum of the above scores
-data_distincted_main_new["Charlson_score"] = data_distincted_main_new[
-    ["charls_sum1_3_points", "charls_sum2points", "charls_sum6points"]
-].sum(axis=1)
-
-# 5. Adjust Charlson score for age using nested conditions:
-#    - If AGE_num is between 50 and 59, add 1.
-#    - If between 60 and 69, add 2.
-#    - If between 70 and 79, add 3.
-#    - If 80 or above, add 4.
-
-# Convert 'AGE_num' to numeric, turning anything non-convertible (like "NA") into NaN.
-data_distincted_main_new["AGE_num"] = pd.to_numeric(
-    data_distincted_main_new["AGE_num"], errors="coerce"
-)
-
-conditions = [
-    (data_distincted_main_new["AGE_num"] >= 50) & (data_distincted_main_new["AGE_num"] <= 59),
-    (data_distincted_main_new["AGE_num"] >= 60) & (data_distincted_main_new["AGE_num"] <= 69),
-    (data_distincted_main_new["AGE_num"] >= 70) & (data_distincted_main_new["AGE_num"] <= 79),
-    (data_distincted_main_new["AGE_num"] >= 80)
-]
-choices = [
-    data_distincted_main_new["Charlson_score"] + 1,
-    data_distincted_main_new["Charlson_score"] + 2,
-    data_distincted_main_new["Charlson_score"] + 3,
-    data_distincted_main_new["Charlson_score"] + 4
-]
-data_distincted_main_new["Charlson_score_age_adj"] = np.select(conditions, choices, default=data_distincted_main_new["Charlson_score"])
-
-# 6. Calculate 10-year survival rate based on the age-adjusted Charlson score.
-# Note: In R, the expression is: (0.983^(exp(1)^(score*0.9)))*100, where '^' is right-associative.
-# In Python, this translates directly using ** for exponentiation.
-data_distincted_main_new["SurvivalRate10years_age_adj"] = (0.983 ** (np.exp(1) ** (data_distincted_main_new["Charlson_score_age_adj"] * 0.9))) * 100
-data_distincted_main_new["SurvivalRate10years_age_adj_"] = (0.983 ** (2.71828 ** (data_distincted_main_new["Charlson_score_age_adj"] * 0.9))) * 100
+# # 1. Calculate the 1- and 3-point sum
+# cols_sum1 = [
+#     'MYOCARDIAL_count',
+#     "HEART FAILURE_count",
+#     "PVD_group_cnt",
+#     "CEREBROVASCULAR_group_cnt",
+#     'DEMENTIA_count',
+#     "COPD_group_cnt",
+#     "GOUT_group_cnt",
+#     "ULCER_group_cnt",
+#     "liver_group_cnt"
+# ]
+# data_distincted_main_new["charls_sum1_3_points"] = data_distincted_main_new[cols_sum1].sum(axis=1)
+#
+# # 2. Calculate the 2-point sum and multiply by 2
+# cols_sum2 = [
+#     "HEMIPLEGIA_group_cnt",
+#     "RENAL_group_cnt",
+#     "MALIGNANCY_group_cnt",
+#     "LEUKEMIA_group_cnt",
+#     "LYMPHOMA_count",
+#     'DIABETES_count'
+# ]
+# data_distincted_main_new["charls_sum2points"] = data_distincted_main_new[cols_sum2].sum(axis=1) * 2
+#
+# # 3. Calculate the 6-point sum and multiply by 6
+# cols_sum6 = ['HIV_count', 'METASTATIC_group_cnt']
+# data_distincted_main_new["charls_sum6points"] = data_distincted_main_new[cols_sum6].sum(axis=1) * 6
+#
+# # 4. Total Charlson score is the sum of the above scores
+# data_distincted_main_new["Charlson_score"] = data_distincted_main_new[
+#     ["charls_sum1_3_points", "charls_sum2points", "charls_sum6points"]
+# ].sum(axis=1)
+#
+# # 5. Adjust Charlson score for age using nested conditions:
+# #    - If AGE_num is between 50 and 59, add 1.
+# #    - If between 60 and 69, add 2.
+# #    - If between 70 and 79, add 3.
+# #    - If 80 or above, add 4.
+#
+# # Convert 'AGE_num' to numeric, turning anything non-convertible (like "NA") into NaN.
+# data_distincted_main_new["AGE_num"] = pd.to_numeric(
+#     data_distincted_main_new["AGE_num"], errors="coerce"
+# )
+#
+# conditions = [
+#     (data_distincted_main_new["AGE_num"] >= 50) & (data_distincted_main_new["AGE_num"] <= 59),
+#     (data_distincted_main_new["AGE_num"] >= 60) & (data_distincted_main_new["AGE_num"] <= 69),
+#     (data_distincted_main_new["AGE_num"] >= 70) & (data_distincted_main_new["AGE_num"] <= 79),
+#     (data_distincted_main_new["AGE_num"] >= 80)
+# ]
+# choices = [
+#     data_distincted_main_new["Charlson_score"] + 1,
+#     data_distincted_main_new["Charlson_score"] + 2,
+#     data_distincted_main_new["Charlson_score"] + 3,
+#     data_distincted_main_new["Charlson_score"] + 4
+# ]
+# data_distincted_main_new["Charlson_score_age_adj"] = np.select(conditions, choices, default=data_distincted_main_new["Charlson_score"])
+#
+# # 6. Calculate 10-year survival rate based on the age-adjusted Charlson score.
+# # Note: In R, the expression is: (0.983^(exp(1)^(score*0.9)))*100, where '^' is right-associative.
+# # In Python, this translates directly using ** for exponentiation.
+# data_distincted_main_new["SurvivalRate10years_age_adj"] = (0.983 ** (np.exp(1) ** (data_distincted_main_new["Charlson_score_age_adj"] * 0.9))) * 100
+# data_distincted_main_new["SurvivalRate10years_age_adj_"] = (0.983 ** (2.71828 ** (data_distincted_main_new["Charlson_score_age_adj"] * 0.9))) * 100
 
 # 7. (Optional) Create a test DataFrame to check Charlson-related columns
-test_Charlson = data_distincted_main_new[[
+test_Charlson = data_distincted_main_new_with_cci[[
     'diseaseSplit', 'AGE_num', 'charls_sum1_3_points', 'charls_sum2points',
     'charls_sum6points', 'Charlson_score', 'Charlson_score_age_adj',
-    'SurvivalRate10years_age_adj', 'SurvivalRate10years_age_adj_'
+    'SurvivalRate10years_age_adj'
 ]]
 
 # =================== Drop Unrequired Columns ===================
-# Remove all columns that contain "_count"
-cols_to_remove = [col for col in data_distincted_main_new.columns if "_count" in col]
-df_main_cln = data_distincted_main_new.drop(columns=cols_to_remove)
+# # Remove all columns that contain "_count"
+# cols_to_remove = [col for col in data_distincted_main_new.columns if "_count" in col]
+# df_main_cln = data_distincted_main_new.drop(columns=cols_to_remove)
+#
+# # Then remove all columns that contain "_group_cnt" from the new DataFrame
+# cols_to_remove = [col for col in df_main_cln.columns if "_group_cnt" in col]
+# df_main_cln = df_main_cln.drop(columns=cols_to_remove)
+#
+# # df_main_cln now contains the cleaned DataFrame without the _count and _group_cnt columns.
+# df_main_cln.to_csv('alert_analysis/data_process/data_main_cln.csv', index=False)
 
-# Then remove all columns that contain "_group_cnt" from the new DataFrame
-cols_to_remove = [col for col in df_main_cln.columns if "_group_cnt" in col]
-df_main_cln = df_main_cln.drop(columns=cols_to_remove)
-
-# df_main_cln now contains the cleaned DataFrame without the _count and _group_cnt columns.
-df_main_cln.to_csv('alert_analysis/data_process/data_main_cln.csv', index=False)
+data_distincted_main_new_with_cci.to_csv(
+    'alert_analysis/data_process/data_distincted_main_new_with_cci.csv',
+    index=False
+)
 
 
 
