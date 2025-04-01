@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
-df_main_cln = pd.read_csv('alert_analysis/data_process/data_main_cln.csv')
+#df_main_cln = pd.read_csv('alert_analysis/data_process/data_main_cln.csv')
+# Not the best practice but to avoid code changes, we will use the same data name (same n rows different n columns)
+df_main_cln = pd.read_csv('alert_analysis/data_process/data_distincted_main_new_with_cci.csv')
+
 #TODO #ADD THE AGE
 # 1. Create the 'adult_child_cat' column
 #    - If AGE_num < 19, label as "child"; otherwise "adult"
@@ -177,21 +180,16 @@ test_data_from_alert = df_main_cln[['Order_ID_new_update',
 # Print or inspect the resulting subset.
 print(test_data_from_alert)
 
-import pandas as pd
-import numpy as np
-
 # -----------------------------------------------------------------------------
 # 1) SELECT SPECIFIC COLUMNS FROM df_main_cln
 # -----------------------------------------------------------------------------
-# This replicates src_for_flat <- df_main_cln[, (names(df_main_cln) %in% c(...))]
-# In Python, we use df[column_list] to subset.
 
 columns_to_keep = [
     "Order_ID_new_update",
     "Hospital_cat",
     "HospitalName_EN_cat",
     "UnitName_cat",
-    "Medical_Record_cat",
+    #"Medical_Record_cat",
     "SeverityLevelToStopOrder_cat",
     "OrderOrigin",
     "Time_Prescribing_Order",
@@ -228,78 +226,21 @@ columns_to_keep = [
     "Other_Text",
 ]
 
-src_for_flat = df_main_cln[columns_to_keep]
+#src_for_flat = df_main_cln[columns_to_keep]
 
 # -----------------------------------------------------------------------------
 # 2) REMOVE DUPLICATES
 # -----------------------------------------------------------------------------
-# Equivalent to R:
-#   src_for_flat_cln <- src_for_flat %>% group_by_all() %>% slice(1)
-# In pandas, group_by_all + slice(1) is effectively just drop_duplicates on all columns.
 
-src_for_flat_cln = src_for_flat.drop_duplicates()
+src_for_flat_cln = df_main_cln.drop_duplicates()
 
 # -----------------------------------------------------------------------------
 # 3) CREATE A VERSION WITHOUT 'diff_time_mabat_ms'
 # -----------------------------------------------------------------------------
-# Equivalent to removing 'diff_time_mabat_ms' from the column set.
-# R code:
-#   src_for_flat_cln_wo_mabat_ms <- src_for_flat_cln[, (names(src_for_flat_cln) %in% c(...))]
-# We simply drop the column in Python.
-
-columns_without_mabat = [col for col in columns_to_keep if col != "diff_time_mabat_ms"]
-src_for_flat_cln_wo_mabat_ms = src_for_flat_cln[columns_without_mabat]
 
 # -----------------------------------------------------------------------------
 # 4) PIVOT TO WIDE FORMAT BY 'Alert_Rn_Severity_cat'
 # -----------------------------------------------------------------------------
-# Equivalent to:
-#   flat_by_sevirity <- dcast(src_for_flat_cln_wo_mabat_ms,
-#        Order_ID_new_update + Hospital_cat + ... + adult_child_cat ~ Alert_Rn_Severity_cat)
-# The left-hand side of ~ are "index" columns; the right-hand side is the "columns".
-# In R's reshape2::dcast with no value.var or fun.aggregate, it typically counts occurrences.
-# In pandas, we replicate that with pivot_table using aggfunc='size' or a lambda returning x.size.
-
-# index_cols = [
-#     "Order_ID_new_update",
-#     "Hospital_cat",
-#     "HospitalName_EN_cat",
-#     "UnitName_cat",
-#     "Medical_Record_cat",
-#     "SeverityLevelToStopOrder_cat",
-#     "OrderOrigin",
-#     "Time_Prescribing_Order",
-#     "Details",
-#     "ATC_NEW",
-#     "ATC_GROUP",
-#     "ResponseType_cat",
-#     "Response",
-#     "Answer_Text_EN",
-#     "ShiftType_cat",
-#     "DayEN_cat",
-#     "HospAmount_new",
-#     "NumMedAmount",
-#     "NumMedAmount_calc",
-#     "id1",
-#     "AGE_num",
-#     "Age_cat",
-#     "Gender_Text_EN_cat",
-#     "Charlson_score_age_adj",
-#     "SurvivalRate10years_age_adj",
-#     "DiagnosisInReception",
-#     "HospDiagnosis",
-#     "SectorText_EN_cat",
-#     "id2",
-#     "adult_child_cat"
-# ]
-#
-# flat_by_sevirity = pd.pivot_table(
-#     src_for_flat_cln_wo_mabat_ms,
-#     index=index_cols,
-#     columns="Alert_Rn_Severity_cat",
-#     aggfunc='size',    # Equivalent to R's default of counting rows if no value.var is specified
-#     fill_value=0
-# ).reset_index()
 
 # -----------------------------------------------------------------------------
 # PIVOT ONLY ON A MINIMAL SET OF COLUMNS:
@@ -309,7 +250,7 @@ src_for_flat_cln_wo_mabat_ms = src_for_flat_cln[columns_without_mabat]
 #    and each Alert_Rn_Severity_cat forms a column counting occurrences.
 alert_counts = (
     pd.pivot_table(
-        src_for_flat_cln_wo_mabat_ms,
+        src_for_flat_cln,
         index=["Order_ID_new_update"],            # minimal index
         columns="Alert_Rn_Severity_cat",          # pivot columns
         aggfunc="size",
@@ -320,7 +261,7 @@ alert_counts = (
 # 2) Then join back to your original wide set of columns
 #    Instead of re-creating them in the pivot index, we just do a merge.
 flat_by_sevirity = pd.merge(
-    src_for_flat_cln_wo_mabat_ms.drop_duplicates(subset=["Order_ID_new_update"]),
+    src_for_flat_cln.drop_duplicates(subset=["Order_ID_new_update"]),
     alert_counts,
     on="Order_ID_new_update",
     how="left"
@@ -328,26 +269,16 @@ flat_by_sevirity = pd.merge(
 
 
 flat_by_sevirity.to_csv('alert_analysis/data_process/flat_by_sevirity.csv', index=False)
-flat_by_sevirity.shape # (3737601, 47)
-assert flat_by_sevirity.shape[0] == 3737601, "The number of rows is incorrect."
+flat_by_sevirity.shape # (3737601, 47), updated shape (3615043, 139)
+assert flat_by_sevirity.shape[0] == 3615043, "The number of rows is incorrect."
 
 # -----------------------------------------------------------------------------
 # OPTIONAL: INSPECT THE RESULT
 # -----------------------------------------------------------------------------
-import pandas as pd
-import numpy as np
 
 # -----------------------------------------------------------------------------
 # 1) ADD THE SUM OF SELECTED ALERT COLUMNS (EXCLUDING NA)
 # -----------------------------------------------------------------------------
-# R Equivalent:
-#   flat_by_sevirity$num_of_alerts_per_order_id <- rowSums(flat_by_sevirity[,
-#       c("DAM", "DDI-Contraindicated Drug Combination", "DDI-Moderate Interaction",
-#       "DDI-Severe Interaction","DRC","Renal alerts","Technical alert")])
-#
-# Simply sum across these columns (axis=1) for each row.
-# (Commented-out "DT" remains omitted if your data doesn't contain it.)
-
 alert_cols = [
     "DAM",
     "DDI-Contraindicated Drug Combination",
@@ -363,15 +294,6 @@ flat_by_sevirity["num_of_alerts_per_order_id"] = flat_by_sevirity[alert_cols].su
 # -----------------------------------------------------------------------------
 # 2) RENAME COLUMNS & CONVERT TO FACTOR (CATEGORICAL) TYPES
 # -----------------------------------------------------------------------------
-#   flat_by_sevirity <- flat_by_sevirity %>%
-#       rename(Renal_alerts = `Renal alerts`) %>%
-#       rename(Technical_alerts = `Technical alert`) %>%
-#       rename(DDI_Severe_Interaction = "DDI-Severe Interaction") %>%
-#       rename(DDI_Moderate_Interaction = "DDI-Moderate Interaction") %>%
-#       rename(DDI_Contraindicated_Drug_Combination = "DDI-Contraindicated Drug Combination")
-#
-# R: factor(...) => Python: .astype('category')
-
 flat_by_sevirity.rename(
     columns={
         "Renal alerts": "Renal_alerts",
@@ -449,15 +371,56 @@ flat_by_sevirity["Renal_alerts_CAT"] = flat_by_sevirity["Renal_alerts"].apply(la
 #
 # In Python, we can use groupby + transform, then conditionally reset values.
 
-flat_by_sevirity["chronic_num_calc"] = (
-    flat_by_sevirity
-    .groupby(["Medical_Record_cat", "id1"])["OrderOrigin"]
-    .transform(lambda x: (x == "Chronic Meds").sum())
-)
+# flat_by_sevirity["chronic_num"] = (
+#     flat_by_sevirity
+#     .groupby(["Medical_Record", "id1"])["OrderOrigin"]
+#     .transform(lambda x: (x == "Chronic Meds").sum())
+# )
+#
+# # Now, set chronic_num_calc = 0 if OrderOrigin != "Chronic Meds"
+# mask_not_chronic = flat_by_sevirity["OrderOrigin"] != "Chronic Meds"
+# flat_by_sevirity.loc[mask_not_chronic, "chronic_num_calc"] = 0
 
-# Now, set chronic_num_calc = 0 if OrderOrigin != "Chronic Meds"
-mask_not_chronic = flat_by_sevirity["OrderOrigin"] != "Chronic Meds"
-flat_by_sevirity.loc[mask_not_chronic, "chronic_num_calc"] = 0
+# Step 1: Create the count column (only for "Chronic Meds")
+# chronic_counts = (flat_by_sevirity.groupby(['Medical_Record', 'id1'])
+#
+
+def calculate_chronic_num_calc(df):
+    """
+    Replicates the R 'chronic_num_calc' logic efficiently in pandas.
+    """
+    # Step 1: Count Chronic Meds per group
+    chronic_counts = (
+        df[df['OrderOrigin'] == "Chronic Meds"]
+        .groupby(['Medical_Record', 'id1'])
+        .size()
+        .reset_index(name='chronic_count')
+    )
+
+    # Step 2: Merge back
+    df = df.merge(
+        chronic_counts,
+        on=['Medical_Record', 'id1'],
+        how='left'
+    )
+
+    # Step 3: Set to 0 where OrderOrigin != "Chronic Meds"
+    df['chronic_num_calc'] = np.where(
+        df['OrderOrigin'] == "Chronic Meds",
+        df['chronic_count'],
+        0
+    )
+
+    # Step 4: Fill NaN (groups without Chronic Meds)
+    df['chronic_num_calc'] = df['chronic_num_calc'].fillna(0).astype(int)
+
+    # Optional: drop temp column
+    df = df.drop(columns=['chronic_count'])
+
+    return df
+
+# Call the function to update the DataFrame
+flat_by_sevirity_ud = calculate_chronic_num_calc(flat_by_sevirity)
 
 # -----------------------------------------------------------------------------
 # 5) COMPUTE "hosp_days" USING ADMISSION & DISCHARGE DATE DIFFERENCE
@@ -473,13 +436,13 @@ flat_by_sevirity.loc[mask_not_chronic, "chronic_num_calc"] = 0
 # Python Implementation:
 
 # 5a) Extract date substring and convert to datetime
-flat_by_sevirity["date_time_prescribe"] = flat_by_sevirity["Time_Prescribing_Order"].str[:10]
-flat_by_sevirity["date_time_prescribe"] = pd.to_datetime(flat_by_sevirity["date_time_prescribe"], errors="coerce")
+flat_by_sevirity_ud["date_time_prescribe"] = flat_by_sevirity_ud["Time_Prescribing_Order"].str[:10]
+flat_by_sevirity_ud["date_time_prescribe"] = pd.to_datetime(flat_by_sevirity_ud["date_time_prescribe"], errors="coerce")
 
 # 5b) Group by [Medical_Record_cat, id1], find max - min + 1
-flat_by_sevirity["hosp_days"] = (
+flat_by_sevirity_ud["hosp_days"] = (
     flat_by_sevirity
-    .groupby(["Medical_Record_cat", "id1"])["date_time_prescribe"]
+    .groupby(["Medical_Record", "id1"])["date_time_prescribe"]
     .transform(lambda x: (x.max() - x.min()).days + 1)
 )
 
@@ -510,7 +473,7 @@ df_diff_time_ms = (
     .agg({"diff_time_mabat_ms": "max"})
 )
 
-flat_by_sevirity = flat_by_sevirity.merge(
+flat_by_sevirity_ud = flat_by_sevirity_ud.merge(
     df_diff_time_ms,
     on="Order_ID_new_update",
     how="left"
@@ -531,6 +494,12 @@ flat_by_sevirity = flat_by_sevirity.merge(
 #   If no value.var is specified, we typically count rows (aggfunc="size").
 #   Remove the column "NA" if it exists, then left join.
 
+src_for_flat_cln['DRC_SUB_GROUP'] = np.where(
+    src_for_flat_cln['DRC_SUB_GROUP'].isna(),
+    'NA',
+    src_for_flat_cln['DRC_SUB_GROUP']
+)
+
 df_DRC_SUB_GROUP = (
     pd.pivot_table(
         src_for_flat_cln,
@@ -547,7 +516,7 @@ if "NA" in df_DRC_SUB_GROUP.columns:
     df_DRC_SUB_GROUP.drop(columns=["NA"], inplace=True)
 
 # Left-join onto flat_by_sevirity
-flat_by_sevirity = flat_by_sevirity.merge(
+flat_by_sevirity_ud_drc = flat_by_sevirity_ud.merge(
     df_DRC_SUB_GROUP,
     on="Order_ID_new_update",
     how="left"
@@ -561,6 +530,12 @@ flat_by_sevirity = flat_by_sevirity.merge(
 #
 #     flat_by_sevirity <- flat_by_sevirity %>%
 #       left_join(df_NeoDRC_SUB_GROUP, by ="Order_ID_new_update")
+
+src_for_flat_cln['NeoDRC_SUB_GROUP'] = np.where(
+    src_for_flat_cln['NeoDRC_SUB_GROUP'].isna(),
+    'NA',
+    src_for_flat_cln['NeoDRC_SUB_GROUP']
+)
 
 df_NeoDRC_SUB_GROUP = (
     pd.pivot_table(
@@ -576,7 +551,7 @@ df_NeoDRC_SUB_GROUP = (
 if "NA" in df_NeoDRC_SUB_GROUP.columns:
     df_NeoDRC_SUB_GROUP.drop(columns=["NA"], inplace=True)
 
-flat_by_sevirity = flat_by_sevirity.merge(
+flat_by_sevirity_ud_neodrc = flat_by_sevirity_ud_drc.merge(
     df_NeoDRC_SUB_GROUP,
     on="Order_ID_new_update",
     how="left"
@@ -588,8 +563,10 @@ flat_by_sevirity = flat_by_sevirity.merge(
 # 2) The wide expansions for DRC_SUB_GROUP and NeoDRC_SUB_GROUP
 # -----------------------------------------------------------------------------
 
-print(flat_by_sevirity.head(10))
+print(flat_by_sevirity_ud_neodrc.head(10))
+print(flat_by_sevirity_ud_neodrc.shape)  # (3615043, 139)
 
+df_final = flat_by_sevirity_ud_neodrc.copy()
 # -----------------------------------------------------------------------------
 # 1) CREATE A NEW FACTOR 'Alert_type'
 # -----------------------------------------------------------------------------
@@ -626,8 +603,8 @@ def determine_alert_type(row):
     else:
         return "Non_alert"
 
-flat_by_sevirity["Alert_type"] = flat_by_sevirity.apply(determine_alert_type, axis=1)
-flat_by_sevirity["Alert_type"] = flat_by_sevirity["Alert_type"].astype("category")
+df_final["Alert_type"] = df_final.apply(determine_alert_type, axis=1)
+df_final["Alert_type"] = df_final["Alert_type"].astype("category")
 
 # -----------------------------------------------------------------------------
 # 2) CREATE test_respType2 (subset of columns) & GROUP BY
@@ -637,7 +614,7 @@ flat_by_sevirity["Alert_type"] = flat_by_sevirity["Alert_type"].astype("category
 #   test_respType2_gb <- test_respType2 %>% group_by(ResponseType_cat, Alert_type, Technical_alerts_CAT) %>%
 #                       summarise(total_count = n())
 
-test_respType2 = flat_by_sevirity[
+test_respType2 = df_final[
     ["ResponseType_cat", "Order_ID_new_update", "Alert_type", "Technical_alerts_CAT"]
 ].copy()
 
@@ -666,15 +643,15 @@ def determine_alert_status(row):
     else:
         return "Non_alert"
 
-flat_by_sevirity["Alert_status"] = flat_by_sevirity.apply(determine_alert_status, axis=1)
-flat_by_sevirity["Alert_status"] = flat_by_sevirity["Alert_status"].astype("category")
+df_final["Alert_status"] = df_final.apply(determine_alert_status, axis=1)
+df_final["Alert_status"] = df_final["Alert_status"].astype("category")
 
 #flat_by_sevirity.to_csv('alert_analysis/data_process/flat_by_sevirity_alerts.csv', index=False)
 #flat_by_sevirity = pd.read_csv('alert_analysis/data_process/flat_by_sevirity_alerts.csv')
-assert flat_by_sevirity.shape[0] == 3737601, "The number of rows is incorrect."
+assert df_final.shape[0] == 3615043, "The number of rows is incorrect."
 
 # Create test_Alert_status subset & group by
-test_Alert_status = flat_by_sevirity[
+test_Alert_status = df_final[
     ["Order_ID_new_update", "ResponseType_cat", "Alert_type", "Alert_status"]
 ].copy()
 
@@ -693,19 +670,19 @@ test_Alert_status_gb = (
 #   flat_by_sevirity$ResponseType_cat[Alert_type=='Non_Error_alert' & Alert_status=='Non_stoping_alert'] <- "Non_stoping_alert"
 
 mask_non_alert = (
-    (flat_by_sevirity["Alert_type"] == "Non_alert") &
-    (flat_by_sevirity["Alert_status"] == "Non_alert")
+    (df_final["Alert_type"] == "Non_alert") &
+    (df_final["Alert_status"] == "Non_alert")
 )
-flat_by_sevirity.loc[mask_non_alert, "ResponseType_cat"] = "Non_alert"
+df_final.loc[mask_non_alert, "ResponseType_cat"] = "Non_alert"
 
 mask_non_stoping_alert = (
-    (flat_by_sevirity["Alert_type"] == "Non_Error_alert") &
-    (flat_by_sevirity["Alert_status"] == "Non_stoping_alert")
+    (df_final["Alert_type"] == "Non_Error_alert") &
+    (df_final["Alert_status"] == "Non_stoping_alert")
 )
-flat_by_sevirity.loc[mask_non_stoping_alert, "ResponseType_cat"] = "Non_stoping_alert"
+df_final.loc[mask_non_stoping_alert, "ResponseType_cat"] = "Non_stoping_alert"
 
 # Re-check group by
-test_Alert_status = flat_by_sevirity[
+test_Alert_status = df_final[
     ["Order_ID_new_update","ResponseType_cat","Alert_type","Alert_status"]
 ].copy()
 
@@ -733,17 +710,17 @@ rename_map = {
     "DRC - Max Daily Dose 1": "DRC_Max_Daily_Dose_1"
 }
 
-flat_by_sevirity.rename(columns=rename_map, inplace=True)
+df_final.rename(columns=rename_map, inplace=True)
 
 # Filter rows
 condition_filter = (
-    ((flat_by_sevirity["DRC_Frequency_1"] < 2) | (flat_by_sevirity["DRC_Frequency_1"].isnull())) &
-    ((flat_by_sevirity["DRC_Single_Dose_1"] < 2) | (flat_by_sevirity["DRC_Single_Dose_1"].isnull())) &
-    ((flat_by_sevirity["DRC_Max_Daily_Dose_1"] < 2) | (flat_by_sevirity["DRC_Max_Daily_Dose_1"].isnull()))
+    ((df_final["DRC_Frequency_1"] < 2) | (df_final["DRC_Frequency_1"].isnull())) &
+    ((df_final["DRC_Single_Dose_1"] < 2) | (df_final["DRC_Single_Dose_1"].isnull())) &
+    ((df_final["DRC_Max_Daily_Dose_1"] < 2) | (df_final["DRC_Max_Daily_Dose_1"].isnull()))
 )
 
 
-flat_by_sevirity_filtered = flat_by_sevirity[condition_filter]
+df_final_filtered = df_final[condition_filter]
 #flat_by_sevirity = flat_by_sevirity[condition_filter]
 
 # -----------------------------------------------------------------------------
@@ -757,7 +734,7 @@ flat_by_sevirity_filtered = flat_by_sevirity[condition_filter]
 #                                   !is.na(flat_by_sevirity$Order_ID_new_update), ]
 
 unique_VALIDATION = (
-    flat_by_sevirity_filtered
+    df_final_filtered
     .groupby("Order_ID_new_update", as_index=False)
     .size()
     .rename(columns={"size": "total_count"})
@@ -765,7 +742,7 @@ unique_VALIDATION = (
 
 unique_to_delete = unique_VALIDATION.loc[unique_VALIDATION["total_count"] == 2, "Order_ID_new_update"]
 
-test_final2 = flat_by_sevirity_filtered[
+test_final2 = df_final_filtered[
     (~flat_by_sevirity["Order_ID_new_update"].isin(unique_to_delete)) &
     (flat_by_sevirity["Order_ID_new_update"].notna())
 ].copy()
