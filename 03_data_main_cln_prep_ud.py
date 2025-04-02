@@ -431,7 +431,7 @@ def filter_and_save_final(df: pd.DataFrame) -> None:
 
     # Save for inspection
     #output_path = "C:/Users/Keren/Desktop/Fatigue_alert/Data/Main_data_2022/df_main_flat_py_version.csv"
-    output_path = "/Users/nirshlomo/Dropbox/PHD/alert-fatigue/alert_analysis/data/main_data_2022/df_main_flat_py_version.csv"
+    output_path = "alert_analysis/data/main_data_2022/df_main_flat_py_version.csv"
     test_hiba.to_csv(output_path, index=False)
     print(f"✅ Final flat file saved to {output_path}")
 

@@ -110,7 +110,7 @@ def save_data(df: pd.DataFrame, file_path: str):
 def main():
     # File paths
     #input_file = "/alert_analysis/data/main_data_2022/df_main_flat_py_version.csv"
-    input_file = '/Users/nirshlomo/Dropbox/PHD/alert-fatigue/alert_analysis/data/main_data_2022/df_main_flat_py_version.csv'
+    input_file = 'alert_analysis/data/main_data_2022/df_main_flat_py_version.csv'
     output_file = "alert_analysis/data/main_data_2022/df_main_active_adult_py_version.csv"
 
     # 1. Read data

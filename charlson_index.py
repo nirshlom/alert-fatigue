@@ -61,6 +61,8 @@ def calculate_cci(df):
         df['charls_sum6points']
     )
 
+    df['AGE_num'] = pd.to_numeric(df['AGE_num'], errors='coerce')
+
     # Age adjustment
     conditions = [
         (df['AGE_num'] >= 50) & (df['AGE_num'] <= 59),

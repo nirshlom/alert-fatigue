@@ -208,13 +208,13 @@ def update_order_id(data):
     return data
 
 
-def plot_histogram(data, column, title, bins=400):
-    print(f"Plotting histogram for {column}...")
-    plt.hist(data[column], bins=bins)
-    plt.title(title)
-    plt.xlabel(column)
-    plt.ylabel("Frequency")
-    plt.show()
+# def plot_histogram(data, column, title, bins=400):
+#     print(f"Plotting histogram for {column}...")
+#     plt.hist(data[column], bins=bins)
+#     plt.title(title)
+#     plt.xlabel(column)
+#     plt.ylabel("Frequency")
+#     plt.show()
 
 
 def calculate_medication_count(data):
@@ -383,11 +383,11 @@ def main():
     data_updated_order = update_order_id(data_merged)
 
     # Optionally plot histogram for original NumMedAmount
-    plot_histogram(data_updated_order, "NumMedAmount", "Histogram of NumMedAmount")
+    #plot_histogram(data_updated_order, "NumMedAmount", "Histogram of NumMedAmount")
 
     # Calculate and plot the number of medications per patient
     data_med_count = calculate_medication_count(data_updated_order)
-    plot_histogram(data_med_count, "NumMedAmount_calc", "Histogram of Calculated NumMedAmount")
+    #plot_histogram(data_med_count, "NumMedAmount_calc", "Histogram of Calculated NumMedAmount")
     data_med_count.to_csv('alert_analysis/data_process/data_distincted_main_new_raw_3.csv', index=False)
 
     # Process diagnosis information and count disease keywords
