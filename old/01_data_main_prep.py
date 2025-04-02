@@ -1,5 +1,5 @@
 import pandas as pd
-data_main = pd.read_csv('alert_analysis/data/main_data_2022/emek.data - Copy.csv')
+data_main = pd.read_csv('../alert_analysis/data/main_data_2022/emek.data - Copy.csv')
 data_main.shape
 data_main.columns
 

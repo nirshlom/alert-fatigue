@@ -196,6 +196,7 @@ def create_categorical_flags(df: pd.DataFrame) -> pd.DataFrame:
     df["DRC_CAT"] = (df["DRC"] > 0).astype(int).astype("category")
     df['Technical_alerts_CAT'] = df['Technical_alerts'].apply(lambda x: 1 if x > 0 else 0).astype("category")
     df["Renal_alerts_CAT"] = df["Renal_alerts"].apply(lambda x: 1 if x > 0 else 0).astype("category")
+    df["NeoDRC_CAT"] = df["NeoDRC"].apply(lambda x: 1 if x > 0 else 0).astype("category")
     print("Binary flags created.")
     return df
 
@@ -407,7 +408,7 @@ def filter_and_save_final(df: pd.DataFrame) -> None:
     condition_filter = (
             ((df["DRC_Frequency_1"] < 2) | (df["DRC_Frequency_1"].isnull())) &
             ((df["DRC_Single_Dose_1"] < 2) | (df["DRC_Single_Dose_1"].isnull())) &
-            ((df["DRC_Max_Daily Dose 1"] < 2) | (df["DRC_Max_Daily Dose 1"].isnull()))
+            ((df["DRC_Max_Daily_Dose_1"] < 2) | (df["DRC_Max_Daily_Dose_1"].isnull()))
     )
 
     df_final_filtered = df[condition_filter].copy()
@@ -476,7 +477,7 @@ def main():
     flat_by_sevirity_ud = join_neodrc_sub_group(flat_by_sevirity_ud, src_for_flat_cln)
 
     print("Final dataset shape:", flat_by_sevirity_ud.shape)
-    print(flat_by_sevirity_ud.head(5))
+    #print(flat_by_sevirity_ud.head(5))
 
     # Copy final dataset for further processing
     df_final = flat_by_sevirity_ud.copy()

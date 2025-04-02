@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 #df_main_cln = pd.read_csv('alert_analysis/data_process/data_main_cln.csv')
 # Not the best practice but to avoid code changes, we will use the same data name (same n rows different n columns)
-df_main_cln = pd.read_csv('alert_analysis/data_process/data_distincted_main_new_with_cci.csv')
+df_main_cln = pd.read_csv('../alert_analysis/data_process/data_distincted_main_new_with_cci.csv')
 
 #TODO #ADD THE AGE
 # 1. Create the 'adult_child_cat' column

@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-data_main = pd.read_csv('alert_analysis/data_process/data_main_prep.csv')
+data_main = pd.read_csv('../alert_analysis/data_process/data_main_prep.csv')
 
 # -------------------------------
 # Step 1: Grouping and deduplication
@@ -180,7 +180,7 @@ data_distincted_main["Basic_Name_1st_word"] = data_distincted_main["Basic_Name"]
 # 2. Read and clean the Excel file for basic_atc
 # -------------------------------------------
 # Read the Excel file, treating "NULL" as missing values
-basic_atc = pd.read_csv("alert_analysis/data/BASIC_NAME_ATC.csv")
+basic_atc = pd.read_csv("../alert_analysis/data/BASIC_NAME_ATC.csv")
 
 # Select only the relevant columns
 basic_atc = basic_atc[["ATC5", "BASIC NAME"]]
