@@ -101,7 +101,7 @@ src_active_patients_merged['atc_group'].value_counts()
 src_active_patients_merged = pd.read_csv('alert_analysis/data/src_active_patients_merged.csv')
 
 #TODO: add the columns: Module_Alert_Rn, Alert_Message, DiagnosisInReception,
-# HospDiagnosis, Other_Text, Response, Answer_Text, hosp_days, num_of_alerts_per_order_id - Done
+# HospDiagnosis, Other_Text, Response, Answer_Text, hosp_days, num_of_alerts_per_order_id - ###### Done ######
 
 # calling the raw data:
 data_main = pd.read_csv('alert_analysis/data/main_data_2022/emek.data - Copy.csv')
@@ -109,7 +109,7 @@ data_main.shape
 data_main.columns
 
 #TODO: cretae a new flat column below/ exceeds dose, the full logic is in Hiba_project_fatigue_alert.rmd
-# add Module_Alert_Rn and Alert_Message
+# add Module_Alert_Rn and Alert_Message ###### Done ######
 #add the logic below
 # ifelse(data_distincted_active_mode_stoping$Module_Alert_Rn == "DRC - Frequency 1" & grepl("exceeds",
 #                                                                                           data_distincted_active_mode_stoping$Alert_Message), "DRC - Frequency - exceeds ",
