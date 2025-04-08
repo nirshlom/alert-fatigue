@@ -14,15 +14,8 @@ df_active_adult['id1'].duplicated().sum() > 0
 
 df_active_adult.columns = map(str.lower, df_active_adult.columns)
 
-# df_active_adult = df_active_adult[
-#     (df_active_adult['severityleveltostoporder_cat'] != "Silence Mode") &
-#     (df_active_adult['adult_child_cat'] == "adult") &
-#     (~df_active_adult['hospital_cat'].isin(["243", "113", "29"])) &
-#     (~df_active_adult['unitname_cat'].isin(["Day_care", "ICU", "Pediatric", "Rehabilitation"]))
-# ]
-
 df_active_adult.shape
-#(2543301, 66)
+#(2543301, 66) R version, py version: (2595123, 165)
 
 # Grouping and summarizing the data: this data in patient level
 src_tbl1_active_by_patient_gb = (
