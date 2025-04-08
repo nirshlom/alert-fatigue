@@ -148,3 +148,8 @@ def process_below_exceed_dose(data):
 test_df = process_below_exceed_dose(df_active_adult)
 
 test_df_test = test_df.loc[test_df['Dose'] == "below"][['Module_Alert_Rn', 'Alert_Message', 'Dose']]
+
+for col in df_active_adult.columns:
+    print(f"Column: {col}")
+    print(test_df_test[col].value_counts())
+    print("\n")

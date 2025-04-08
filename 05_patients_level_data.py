@@ -49,12 +49,12 @@ def group_and_save_patient_data(data,
     """
     grouped_df = (
         data
-        .groupby(["id1", "age_num", "age_cat", "gender_text_en_cat"])
+        .groupby(["id1", "AGE_num", "Age_cat", "Gender_Text_EN_cat"])
         .agg(
-            hospitalname_en_cat_cnt=pd.NamedAgg(column="HospitalName_en_cat", aggfunc=pd.Series.nunique),
+            HospitalName_EN_cat_cnt=pd.NamedAgg(column="HospitalName_EN_cat", aggfunc=pd.Series.nunique),
             survivalrate10years_age_adj_mean=pd.NamedAgg(column="SurvivalRate10years_age_adj", aggfunc="mean"),
-            medical_record_cat_cnt=pd.NamedAgg(column="Medical_Record", aggfunc=pd.Series.nunique),
-            nummedamount_calc_mean=pd.NamedAgg(column="NumMedAmount_calc", aggfunc="mean"),
+            Medical_Record_cnt=pd.NamedAgg(column="Medical_Record", aggfunc=pd.Series.nunique),
+            NumMedAmount_calc_mean=pd.NamedAgg(column="NumMedAmount_calc", aggfunc="mean"),
             hosp_days_mean=pd.NamedAgg(column="hosp_days", aggfunc="mean"),
             chronic_num_calc_mean=pd.NamedAgg(column="chronic_num_calc", aggfunc="mean")
         )
