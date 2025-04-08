@@ -444,6 +444,46 @@ def process_alert_rn_severity(data):
     print("Alert_Rn_Severity_cat processed.")
 
 
+def process_below_exceed_dose(data):
+    """
+    Creates a new column 'Dose' in the DataFrame based on the following conditions:
+
+    For rows where 'Module_Alert_Rn' is one of:
+        - "DRC - Frequency 1"
+        - "DRC - Single Dose 1"
+        - "DRC - Max Daily Dose 1"
+
+    It checks the 'Alert_Message' column:
+        - If the message contains "exceeds", 'Dose' is set to "exceeds".
+        - Else if the message contains "below", 'Dose' is set to "below".
+        - Otherwise, 'Dose' is set to None.
+
+    Parameters:
+        df (pd.DataFrame): Input DataFrame containing 'Module_Alert_Rn' and 'Alert_Message' columns.
+
+    Returns:
+        pd.DataFrame: The modified DataFrame with a new column 'Dose'.
+        :param data:
+    """
+    # Ensure 'Alert_Message' column is of string type for .str.contains to work properly.
+    data['Alert_Message'] = data['Alert_Message'].astype(str)
+
+    # Define the modules for which the logic should apply
+    modules_to_check = ["DRC - Frequency 1", "DRC - Single Dose 1", "DRC - Max Daily Dose 1"]
+
+    # Build condition masks using np.select.
+    conditions = [
+        (data['Module_Alert_Rn'].isin(modules_to_check)) & (data['Alert_Message'].str.contains("exceeds", na=False)),
+        (data['Module_Alert_Rn'].isin(modules_to_check)) & (data['Alert_Message'].str.contains("below", na=False))
+    ]
+    choices = ["exceeds", "below"]
+
+    # Create the new column 'Dose'
+    data['Dose'] = np.select(conditions, choices, default=None)
+
+    return data
+
+
 def process_drc_subgroup(data):
     """Create DRC_SUB_GROUP and NeoDRC_SUB_GROUP columns based on Module_Alert_Rn."""
     drc_values = ["DRC - Duration 1", "DRC - Frequency 1", "DRC - Max Daily Dose 1", "DRC - Message 1",
@@ -511,6 +551,7 @@ def main():
     process_answer_text(data)
     process_other_text(data)
     process_alert_rn_severity(data)
+    process_below_exceed_dose(data)
     process_drc_subgroup(data)
     process_response_type(data)
 

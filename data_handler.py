@@ -2,11 +2,6 @@ import pandas as pd
 from ydata_profiling import ProfileReport
 import numpy as np
 
-# Load the data: df_main_flat.csv(this is order based data) and df_main_active_adult.csv
-df = pd.read_csv('alert_analysis/data/main_data_2022/df_main_flat.csv')
-df.columns = map(str.lower, df.columns)
-print(f'original df has {df.shape[0]} rows and {df.shape[1]} columns')
-# original df has 3615984 rows and 66 columns
 
 # Load the data: df_main_active_adult.csv this order level data only active adults
 # This is the data to work when analysing the active adult orders
@@ -19,12 +14,12 @@ df_active_adult['id1'].duplicated().sum() > 0
 
 df_active_adult.columns = map(str.lower, df_active_adult.columns)
 
-df_active_adult = df_active_adult[
-    (df_active_adult['severityleveltostoporder_cat'] != "Silence Mode") &
-    (df_active_adult['adult_child_cat'] == "adult") &
-    (~df_active_adult['hospital_cat'].isin(["243", "113", "29"])) &
-    (~df_active_adult['unitname_cat'].isin(["Day_care", "ICU", "Pediatric", "Rehabilitation"]))
-]
+# df_active_adult = df_active_adult[
+#     (df_active_adult['severityleveltostoporder_cat'] != "Silence Mode") &
+#     (df_active_adult['adult_child_cat'] == "adult") &
+#     (~df_active_adult['hospital_cat'].isin(["243", "113", "29"])) &
+#     (~df_active_adult['unitname_cat'].isin(["Day_care", "ICU", "Pediatric", "Rehabilitation"]))
+# ]
 
 df_active_adult.shape
 #(2543301, 66)
@@ -36,7 +31,7 @@ src_tbl1_active_by_patient_gb = (
     .agg(
         hospitalname_en_cat_cnt=pd.NamedAgg(column="hospitalname_en_cat", aggfunc=pd.Series.nunique),  # Count distinct
         survivalrate10years_age_adj_mean=pd.NamedAgg(column="survivalrate10years_age_adj", aggfunc="mean"),  # Mean
-        medical_record_cat_cnt=pd.NamedAgg(column="medical_record_cat", aggfunc=pd.Series.nunique),  # Count distinct
+        medical_record_cat_cnt=pd.NamedAgg(column="medical_record", aggfunc=pd.Series.nunique),  # Count distinct
         nummedamount_calc_mean=pd.NamedAgg(column="nummedamount_calc", aggfunc="mean"),  # Mean
         hosp_days_mean=pd.NamedAgg(column="hosp_days", aggfunc="mean"),  # Mean
         chronic_num_calc_mean=pd.NamedAgg(column="chronic_num_calc", aggfunc="mean")  # Mean

@@ -1,6 +1,9 @@
 import sys
 import pandas as pd
 import plotly.express as px
+
+from data_handler import df_active_adult
+
 # Append the directory containing your package to sys.path.
 sys.path.append('/Users/nirshlomo/Dropbox/frontlife/fraud/euphoria')
 # Now import the package
@@ -98,3 +101,50 @@ example_report.add_object(plot_dict)
 # example_report.add_object(example_df)
 
 example_report.render()
+
+
+
+def process_below_exceed_dose(data):
+    """
+    Creates a new column 'Dose' in the DataFrame based on the following conditions:
+
+    For rows where 'Module_Alert_Rn' is one of:
+        - "DRC - Frequency 1"
+        - "DRC - Single Dose 1"
+        - "DRC - Max Daily Dose 1"
+
+    It checks the 'Alert_Message' column:
+        - If the message contains "exceeds", 'Dose' is set to "exceeds".
+        - Else if the message contains "below", 'Dose' is set to "below".
+        - Otherwise, 'Dose' is set to None.
+
+    Parameters:
+        df (pd.DataFrame): Input DataFrame containing 'Module_Alert_Rn' and 'Alert_Message' columns.
+
+    Returns:
+        pd.DataFrame: The modified DataFrame with a new column 'Dose'.
+        :param data:
+    """
+    # Ensure 'Alert_Message' column is of string type for .str.contains to work properly.
+    data['Alert_Message'] = data['Alert_Message'].astype(str)
+
+    # Define the modules for which the logic should apply
+    modules_to_check = ["DRC - Frequency 1", "DRC - Single Dose 1", "DRC - Max Daily Dose 1"]
+
+    # Build condition masks using np.select.
+    conditions = [
+        (data['Module_Alert_Rn'].isin(modules_to_check)) & (data['Alert_Message'].str.contains("exceeds", na=False)),
+        (data['Module_Alert_Rn'].isin(modules_to_check)) & (data['Alert_Message'].str.contains("below", na=False))
+    ]
+    choices = ["exceeds", "below"]
+
+    # Create the new column 'Dose'
+    data['Dose'] = np.select(conditions, choices, default=None)
+
+    return data
+
+
+
+test_df = process_below_exceed_dose(df_active_adult)
+
+test_df_test = test_df.loc[test_df['Dose'] == "below"][['Module_Alert_Rn', 'Alert_Message', 'Dose']]
