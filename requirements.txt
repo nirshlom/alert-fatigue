@@ -1,7 +1,7 @@
 # Core data processing and analysis
 pandas==2.2.3
-numpy==2.2.3
-scipy==1.15.2
+numpy==1.26.4
+scipy==1.13.1
 
 # Statistical analysis
 statsmodels==0.14.4

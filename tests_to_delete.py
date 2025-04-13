@@ -1,4 +1,6 @@
 import sys
+print(sys.executable)
+
 import pandas as pd
 import plotly.express as px
 
@@ -11,7 +13,7 @@ from euphoria.components.graph import GraphComponent
 from euphoria import Report
 
 #TODO: get main_adults_flat_ud.py to work
-main_adults = pd.read_csv('alert_analysis/data/main_data_2022/df_main_active_adult_py_version.csv')
+main_adults = pd.read_csv('alert_analysis/data/df_main_active_adult.csv')
 
 #Graph 1
 #df_box_plot = px.data.tips()

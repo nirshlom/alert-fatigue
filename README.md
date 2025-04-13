@@ -87,12 +87,12 @@ print(alert_counts)
 
 ## Requirements
 
-- Python 3.x
-- pandas
-- numpy
-- scipy
-- statsmodels
-- tableone
+- Python 3.8 or higher
+- pandas==2.2.3
+- numpy==2.2.3
+- scipy==1.15.2
+- statsmodels==0.14.4
+- tableone==0.9.1
 - plotly
 - jupyter
 
