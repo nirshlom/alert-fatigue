@@ -119,17 +119,3 @@ df_active_adult['Alert_type'].value_counts()
 
 
 
-
-#TODO: April 27
-# 1. add to patient level data: number of diagnoses (diagnosisinreception, hospdiagnosis), add this to tableone analysis
-# 2. add unitname_cat to patient level data and tableone
-# from the main data, remove PARAMEDICAL (column name = sectortext_en_cat)
-# create the alert table according to year-month
-# create pie chart- figure 1 (distribution of alert types)  - I should create a new column that combines all the features listed in the doc
-# figure 3, answer_text_en
-# figure 8, specified in the doc
-# create table 8: general statistics of alert
-
-
-
-
