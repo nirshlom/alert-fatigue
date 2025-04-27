@@ -118,6 +118,8 @@ df_active_adult['Alert_type'].value_counts()
 
 
 
+
+
 #TODO: April 27
 # 1. add to patient level data: number of diagnoses (diagnosisinreception, hospdiagnosis), add this to tableone analysis
 # 2. add unitname_cat to patient level data and tableone
@@ -127,7 +129,6 @@ df_active_adult['Alert_type'].value_counts()
 # figure 3, answer_text_en
 # figure 8, specified in the doc
 # create table 8: general statistics of alert
-
 
 
 
