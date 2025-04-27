@@ -2,15 +2,10 @@ import pandas as pd
 from ydata_profiling import ProfileReport
 import numpy as np
 
-# Load the data: df_main_flat.csv(this is order based data) and df_main_active_adult.csv
-df = pd.read_csv('alert_analysis/data/main_data_2022/df_main_flat.csv')
-df.columns = map(str.lower, df.columns)
-print(f'original df has {df.shape[0]} rows and {df.shape[1]} columns')
-# original df has 3615984 rows and 66 columns
 
 # Load the data: df_main_active_adult.csv this order level data only active adults
 # This is the data to work when analysing the active adult orders
-df_active_adult = pd.read_csv('alert_analysis/data/df_main_active_adult.csv')
+df_active_adult = pd.read_csv('alert_analysis/data/main_data_2022/df_main_active_adult_py_version.csv')
 print(f'original df_active_adult has {df_active_adult.shape[0]} rows and {df_active_adult.shape[1]} columns')
 # original df_active_adult has 2,543,301 rows and 66 columns
 
@@ -19,15 +14,8 @@ df_active_adult['id1'].duplicated().sum() > 0
 
 df_active_adult.columns = map(str.lower, df_active_adult.columns)
 
-df_active_adult = df_active_adult[
-    (df_active_adult['severityleveltostoporder_cat'] != "Silence Mode") &
-    (df_active_adult['adult_child_cat'] == "adult") &
-    (~df_active_adult['hospital_cat'].isin(["243", "113", "29"])) &
-    (~df_active_adult['unitname_cat'].isin(["Day_care", "ICU", "Pediatric", "Rehabilitation"]))
-]
-
 df_active_adult.shape
-#(2543301, 66)
+#(2543301, 66) R version, py version: (2595123, 165)
 
 # Grouping and summarizing the data: this data in patient level
 src_tbl1_active_by_patient_gb = (
@@ -36,7 +24,7 @@ src_tbl1_active_by_patient_gb = (
     .agg(
         hospitalname_en_cat_cnt=pd.NamedAgg(column="hospitalname_en_cat", aggfunc=pd.Series.nunique),  # Count distinct
         survivalrate10years_age_adj_mean=pd.NamedAgg(column="survivalrate10years_age_adj", aggfunc="mean"),  # Mean
-        medical_record_cat_cnt=pd.NamedAgg(column="medical_record_cat", aggfunc=pd.Series.nunique),  # Count distinct
+        medical_record_cat_cnt=pd.NamedAgg(column="medical_record", aggfunc=pd.Series.nunique),  # Count distinct
         nummedamount_calc_mean=pd.NamedAgg(column="nummedamount_calc", aggfunc="mean"),  # Mean
         hosp_days_mean=pd.NamedAgg(column="hosp_days", aggfunc="mean"),  # Mean
         chronic_num_calc_mean=pd.NamedAgg(column="chronic_num_calc", aggfunc="mean")  # Mean
@@ -106,10 +94,15 @@ src_active_patients_merged['atc_group'].value_counts()
 src_active_patients_merged = pd.read_csv('alert_analysis/data/src_active_patients_merged.csv')
 
 #TODO: add the columns: Module_Alert_Rn, Alert_Message, DiagnosisInReception,
-# HospDiagnosis, Other_Text, Response, Answer_Text, hosp_days, num_of_alerts_per_order_id
+# HospDiagnosis, Other_Text, Response, Answer_Text, hosp_days, num_of_alerts_per_order_id - ###### Done ######
+
+# calling the raw data:
+data_main = pd.read_csv('alert_analysis/data/main_data_2022/emek.data - Copy.csv')
+data_main.shape
+data_main.columns
 
 #TODO: cretae a new flat column below/ exceeds dose, the full logic is in Hiba_project_fatigue_alert.rmd
-# add Module_Alert_Rn and Alert_Message
+# add Module_Alert_Rn and Alert_Message ###### Done ######
 #add the logic below
 # ifelse(data_distincted_active_mode_stoping$Module_Alert_Rn == "DRC - Frequency 1" & grepl("exceeds",
 #                                                                                           data_distincted_active_mode_stoping$Alert_Message), "DRC - Frequency - exceeds ",
@@ -122,5 +115,7 @@ src_active_patients_merged = pd.read_csv('alert_analysis/data/src_active_patient
 
 #This is the main outcome to analyse
 df_active_adult['Alert_type'].value_counts()
+
+
 
 
