@@ -165,6 +165,8 @@ def main():
 
     # 1. Read data
     df = read_data(input_file)
+    print(list(df.columns))
+    'sectortext_en_cat' in [col.lower() for col in df.columns]
 
     # 2. Convert specified columns to categorical data type.
     columns_to_convert = [
@@ -208,8 +210,8 @@ def main():
     print(df_active_adult.head())
 
     df_active_adult = filter_rows_by_conditions(
-        df_active_adult, conditions = {
-        'sectortext_en_cat': 'PARAMEDICAL'
+        df_active_adult, conditions_dict = {
+        'SectorText_EN_cat': lambda x: x != 'PARAMEDICAL'
         }
         )
 

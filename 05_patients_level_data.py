@@ -56,7 +56,9 @@ def group_and_save_patient_data(data,
             Medical_Record_cnt=pd.NamedAgg(column="Medical_Record", aggfunc=pd.Series.nunique),
             NumMedAmount_calc_mean=pd.NamedAgg(column="NumMedAmount_calc", aggfunc="mean"),
             hosp_days_mean=pd.NamedAgg(column="hosp_days", aggfunc="mean"),
-            chronic_num_calc_mean=pd.NamedAgg(column="chronic_num_calc", aggfunc="mean")
+            chronic_num_calc_mean=pd.NamedAgg(column="chronic_num_calc", aggfunc="mean"),
+            DiagnosisInReception=pd.NamedAgg(column="DiagnosisInReception", aggfunc=pd.Series.nunique),
+            HospDiagnosis=pd.NamedAgg(column="HospDiagnosis", aggfunc=pd.Series.nunique)
         )
         .reset_index()
     )
