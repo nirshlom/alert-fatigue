@@ -107,6 +107,56 @@ def save_data(df: pd.DataFrame, file_path: str):
     df.to_csv(file_path, index=False)
     print("Data saved successfully.")
 
+def filter_rows_by_conditions(df: pd.DataFrame, conditions_dict: dict) -> pd.DataFrame:
+    """
+    Filter DataFrame rows based on specified column conditions.
+    
+    Args:
+        df (pd.DataFrame): Input DataFrame
+        conditions_dict (dict): Dictionary where keys are column names and values are conditions.
+                              Conditions can be:
+                              - Single value: exact match
+                              - List: any of the values
+                              - Tuple: range (min, max)
+                              - Callable: custom function
+    
+    Returns:
+        pd.DataFrame: Filtered DataFrame
+    
+    Example:
+        conditions = {
+            'Age_cat': ['19-30', '31-44'],  # Age categories to include
+            'Hospital_cat': '123',           # Exact hospital match
+            'AGE_num': (18, 65),            # Age range between 18 and 65
+            'SeverityLevelToStopOrder_cat': lambda x: x != 'Silence Mode'  # Custom condition
+        }
+        filtered_df = filter_rows_by_conditions(df, conditions)
+    """
+    mask = pd.Series(True, index=df.index)
+    
+    for column, condition in conditions_dict.items():
+        if column not in df.columns:
+            print(f"Warning: Column '{column}' not found in DataFrame")
+            continue
+            
+        if callable(condition):
+            # Handle custom function conditions
+            mask &= condition(df[column])
+        elif isinstance(condition, tuple) and len(condition) == 2:
+            # Handle range conditions
+            min_val, max_val = condition
+            mask &= (df[column] >= min_val) & (df[column] <= max_val)
+        elif isinstance(condition, list):
+            # Handle list of values
+            mask &= df[column].isin(condition)
+        else:
+            # Handle single value
+            mask &= (df[column] == condition)
+    
+    filtered_df = df[mask].copy()
+    print(f"Filtered from {len(df)} to {len(filtered_df)} rows")
+    return filtered_df
+
 def main():
     # File paths
     #input_file = "/alert_analysis/data/main_data_2022/df_main_flat_py_version.csv"
@@ -156,6 +206,12 @@ def main():
     df_active_adult = update_unitname_category(df_active_adult, new_categories)
     print("\nHead of df_main_active_adult:")
     print(df_active_adult.head())
+
+    df_active_adult = filter_rows_by_conditions(
+        df_active_adult, conditions = {
+        'sectortext_en_cat': 'PARAMEDICAL'
+        }
+        )
 
     # 10. Save the filtered DataFrame.
     save_data(df_active_adult, output_file)
