@@ -131,38 +131,4 @@ df_active_adult['Alert_type'].value_counts()
 # create table 8: general statistics of alert # TODO: nit Done
 
 
-
-# Define categorical and continuous variables
-categorical_vars = [
-    "DRC_Single_Dose_1",
-    "DRC_Frequency_1",
-    "DRC_Max_Daily_Dose_1",
-    "Renal_alerts_CAT",
-    "DDI_Contraindicated_Drug_Combination_CAT",
-    "DDI_Severe_Interaction_CAT",
-    "DDI_Moderate_Interaction_CAT",
-    "DAM_CAT",
-    "Technical_alerts_CAT"
-]
-
-# continuous_vars = [
-#     "AGE_num",
-#     "survivalrate10years_age_adj_mean",
-#     "NumMedAmount_calc_mean",
-#     "hosp_days_mean",
-#     "chronic_num_calc_mean",
-#     "Medical_Record_cnt"
-# ]
-
-# Generate summary table
-alert_table = TableOne(
-    df_main_active_adult,
-    categorical=categorical_vars,
-    groupby="date_time_prescribe",
-    #continuous=continuous_vars,
-    pval=True,  # Add p-values
-    missing=True  # Show missing values
-)
-
-# Print the table
-print(alert_table.tabulate(tablefmt="pipe"))
+# Just to show rowws adding
