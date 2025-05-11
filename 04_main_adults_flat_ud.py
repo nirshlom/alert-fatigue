@@ -167,6 +167,10 @@ def main():
     df = read_data(input_file)
     print(list(df.columns))
     'sectortext_en_cat' in [col.lower() for col in df.columns]
+    
+    # Check date_time_prescribe type
+    print("\nType of date_time_prescribe:", df['date_time_prescribe'].dtype)
+    print("Sample values:", df['date_time_prescribe'].head())
 
     # 2. Convert specified columns to categorical data type.
     columns_to_convert = [
