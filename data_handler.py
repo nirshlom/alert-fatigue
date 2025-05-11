@@ -121,15 +121,48 @@ df_active_adult['Alert_type'].value_counts()
 
 
 #TODO: April 27
-# 1. add to patient level data: number of diagnoses (diagnosisinreception, hospdiagnosis), add this to tableone analysis
-# 2. add unitname_cat to patient level data and tableone
-# from the main data, remove PARAMEDICAL (column name = sectortext_en_cat)
-# create the alert table according to year-month
+# 1. add to patient level data: number of diagnoses (diagnosisinreception, hospdiagnosis), add this to tableone analysis # TODO: Done
+# 2. add unitname_cat to patient level data and tableone # TODO: Done   
+# from the main data, remove PARAMEDICAL (column name = sectortext_en_cat) # TODO: Done
+# create the alert table according to year-month # TODO: not done
 # create pie chart- figure 1 (distribution of alert types)  - I should create a new column that combines all the features listed in the doc
 # figure 3, answer_text_en
 # figure 8, specified in the doc
-# create table 8: general statistics of alert
+# create table 8: general statistics of alert # TODO: nit Done
 
 
 
+# Define categorical and continuous variables
+categorical_vars = [
+    "DRC_Single_Dose_1",
+    "DRC_Frequency_1",
+    "DRC_Max_Daily_Dose_1",
+    "Renal_alerts_CAT",
+    "DDI_Contraindicated_Drug_Combination_CAT",
+    "DDI_Severe_Interaction_CAT",
+    "DDI_Moderate_Interaction_CAT",
+    "DAM_CAT",
+    "Technical_alerts_CAT"
+]
 
+# continuous_vars = [
+#     "AGE_num",
+#     "survivalrate10years_age_adj_mean",
+#     "NumMedAmount_calc_mean",
+#     "hosp_days_mean",
+#     "chronic_num_calc_mean",
+#     "Medical_Record_cnt"
+# ]
+
+# Generate summary table
+alert_table = TableOne(
+    df_main_active_adult,
+    categorical=categorical_vars,
+    groupby="date_time_prescribe",
+    #continuous=continuous_vars,
+    pval=True,  # Add p-values
+    missing=True  # Show missing values
+)
+
+# Print the table
+print(alert_table.tabulate(tablefmt="pipe"))
