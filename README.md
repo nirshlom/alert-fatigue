@@ -13,15 +13,18 @@ The project is organized into several key Python scripts that handle different a
    - Handles hospital and unit categorization
    - Processes time columns and converts them to appropriate formats
    - Maps Hebrew text to English for consistency
+   - Creates dose direction indicators for DRC and NeoDRC alerts
    - Key functions:
      - `process_hospital_columns()`: Maps hospital names and categories
      - `process_time_columns()`: Converts Excel-style time to datetime
      - `process_drc_subgroup()`: Creates DRC and NeoDRC subgroups
+     - `process_below_exceed_dose()`: Creates dose direction indicators for DRC and NeoDRC alerts
 
 2. **02_data_main_prep_ud.py**
    - Column selection and data transformation
    - Medication count calculations
    - Disease keyword analysis
+   - Preserves dose direction columns through the pipeline
    - Key functions:
      - `select_columns()`: Manages column selection and ordering
      - `calculate_medication_count()`: Computes medication counts per patient
@@ -52,6 +55,7 @@ The project is organized into several key Python scripts that handle different a
      - Patient characteristics by gender
      - Alert type distribution
      - Order analysis by ATC group
+     - Dose direction analysis for DRC and NeoDRC alerts
 
 ## Key Features
 
@@ -60,6 +64,21 @@ The project is organized into several key Python scripts that handle different a
 - **Time Analysis**: Detailed analysis of alert response times
 - **Patient Categorization**: Sophisticated patient grouping based on multiple factors
 - **Alert Classification**: Detailed categorization of different alert types
+- **Dose Direction Analysis**: Tracks whether doses exceed or fall below recommended ranges for DRC and NeoDRC alerts
+
+## Column Renaming
+
+The project includes a comprehensive column renaming system (`column_rename.py`) that standardizes column names throughout the pipeline. Key renaming patterns include:
+
+- Hospital and unit information: `Hospital_cat` → `hospital_code`
+- Alert-related columns: `Alert_Message` → `alert_message`
+- DRC and NeoDRC dose direction columns:
+  - `dose_direction_DRC_Frequency_1` → `drc_frequency_direction`
+  - `dose_direction_DRC_Single_Dose_1` → `drc_single_dose_direction`
+  - `dose_direction_DRC_Max_Daily_Dose_1` → `drc_max_daily_dose_direction`
+  - `dose_direction_NeoDRC_Frequency_1` → `neodrc_frequency_direction`
+  - `dose_direction_NeoDRC_Single_Dose_1` → `neodrc_single_dose_direction`
+  - `dose_direction_NeoDRC_Max_Daily_Dose_1` → `neodrc_max_daily_dose_direction`
 
 ## Example Usage
 
@@ -75,51 +94,8 @@ data_selected = select_columns(data_grouped)
 # Analyze alert patterns
 alert_counts = src_active_patients_merged['alert_type'].value_counts()
 print(alert_counts)
+
+# Analyze dose direction patterns
+dose_direction_counts = src_active_patients_merged['drc_frequency_direction'].value_counts()
+print(dose_direction_counts)
 ```
-
-## Data Flow
-
-1. Raw data → 01_data_main_prep_ud.py (Initial processing)
-2. → 02_data_main_prep_ud.py (Column selection and transformation)
-3. → 03_data_main_cln_prep_ud.py (Cleaning and categorization)
-4. → 04_main_adults_flat_ud.py (Adult patient analysis)
-5. → main_analysis.ipynb (Final analysis and visualization)
-
-## Requirements
-
-- Python 3.8 or higher
-- pandas==2.2.3
-- numpy==2.2.3
-- scipy==1.15.2
-- statsmodels==0.14.4
-- tableone==0.9.1
-- plotly
-- jupyter
-
-### Managing Dependencies
-
-The project uses a `requirements.txt` file to manage Python package dependencies. This file lists all the necessary packages with their specific versions to ensure reproducibility of the analysis. To create or update the requirements file, you can use:
-
-```bash
-pip freeze > requirements.txt
-```
-
-To install the exact versions of packages used in this project:
-
-```bash
-pip install -r requirements.txt
-```
-
-## Installation
-
-1. Clone the repository
-2. Install requirements:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Run the scripts in order (01-04)
-4. Open main_analysis.ipynb for final analysis
-
-## Contributing
-
-Please follow the existing code structure and naming conventions when contributing to this project.

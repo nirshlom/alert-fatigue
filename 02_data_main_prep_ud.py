@@ -106,7 +106,13 @@ def select_columns(data):
         "Time_Mabat_Response_convert_ms_res",  # additional column
         "diff_time_mabat_ms",  # additional column
         "DRC_SUB_GROUP",  # additional column
-        "NeoDRC_SUB_GROUP"  # additional column
+        "NeoDRC_SUB_GROUP",  # additional column
+        "dose_direction_DRC_Frequency_1",  # new dose direction column
+        "dose_direction_DRC_Single_Dose_1",  # new dose direction column
+        "dose_direction_DRC_Max_Daily_Dose_1",  # new dose direction column
+        "dose_direction_NeoDRC_Frequency_1",  # new dose direction column
+        "dose_direction_NeoDRC_Single_Dose_1",  # new dose direction column
+        "dose_direction_NeoDRC_Max_Daily_Dose_1"  # new dose direction column
     ]
     missing_cols = [col for col in select_cols if col not in data.columns]
     assert not missing_cols, f"Missing expected columns: {missing_cols}"
@@ -248,6 +254,15 @@ def process_diagnosis(data):
 
     data["diseaseSplit"] = data["diseaseSplit"].apply(fix_disease_split)
     return data
+
+def process_reception_diagnosis(data):
+    print("Processing reception diagnosis information...")
+    # Create num_of_diagnosis column
+    data["num_of_reception_diagnosis"] = np.where(
+        data["DiagnosisInReception"].isna() | (data["DiagnosisInReception"] == "NA"),
+        0,
+        data["DiagnosisInReception"].str.split(";").str.len()
+    )
 
 
 def count_disease_keywords(data):
@@ -392,7 +407,8 @@ def main():
 
     # Process diagnosis information and count disease keywords
     data_diagnosis = process_diagnosis(data_med_count)
-    data_with_disease_counts = count_disease_keywords(data_diagnosis)
+    data_reception_diagnosis = process_reception_diagnosis(data_med_count)
+    data_with_disease_counts = count_disease_keywords(data_reception_diagnosis)
 
     # Calculate Charlson Comorbidity Index Scores
     data_with_cci = calculate_charlson(data_with_disease_counts)
