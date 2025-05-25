@@ -1,10 +1,7 @@
 import pandas as pd
 from ydata_profiling import ProfileReport
-import numpy as np
 
 df_active_adult = pd.read_csv('alert_analysis/data/main_data_2022/df_main_active_adult_py_version.csv')
-print(f'original df_active_adult has {df_active_adult.shape[0]} rows and {df_active_adult.shape[1]} columns')
-
 
 #TODO: create profile report for df_active_adult
 profile = ProfileReport(df_active_adult, title="Data Profiling Report", explorative=True)
