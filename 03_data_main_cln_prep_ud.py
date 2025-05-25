@@ -495,7 +495,8 @@ def main():
     #print(flat_by_sevirity_ud.head(5))
 
     # Copy final dataset for further processing
-    df_final = flat_by_sevirity_ud.copy()
+    df_final = flat_by_sevirity_ud
+    df_final.to_csv('alert_analysis/data_process/df_final_03_process.csv')
 
     # Step 12: Determine Alert Type and Alert Status
     df_final = add_alert_type_and_status(df_final)
