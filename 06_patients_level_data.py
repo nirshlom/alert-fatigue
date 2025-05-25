@@ -16,6 +16,8 @@ def print_data_summary(df: pd.DataFrame, message: str):
     print(message)
     print(df.describe(include='all'))
 
+def my_range(x):
+    return x.max() - x.min()
 
 def group_and_save_patient_data(data,
                                 output_dir="alert_analysis/data/main_data_2022/",
@@ -55,12 +57,19 @@ def group_and_save_patient_data(data,
         .agg(
             hospital_name_cnt=pd.NamedAgg(column="hospital_name", aggfunc=pd.Series.nunique),
             survival_rate_10y_age_adj_mean=pd.NamedAgg(column="survival_rate_10y_age_adj", aggfunc="mean"),
+            survival_rate_10y_age_adj_range=pd.NamedAgg(column="survival_rate_10y_age_adj", aggfunc=my_range),
             medical_record_cnt=pd.NamedAgg(column="medical_record", aggfunc=pd.Series.nunique),
             medication_orders_hospatalization_mean=pd.NamedAgg(column="medication_orders_hospatalization", aggfunc="mean"),
+            medication_orders_hospatalization_range=pd.NamedAgg(column="medication_orders_hospatalization", aggfunc=my_range),
             hospital_days_mean=pd.NamedAgg(column="hospital_days", aggfunc="mean"),
+            hospital_days_range=pd.NamedAgg(column="hospital_days", aggfunc=my_range),
             chronic_med_count_mean=pd.NamedAgg(column="chronic_med_count", aggfunc="mean"),
-            DiagnosisInReception=pd.NamedAgg(column="DiagnosisInReception", aggfunc=pd.Series.nunique),
-            HospDiagnosis=pd.NamedAgg(column="HospDiagnosis", aggfunc=pd.Series.nunique)
+            chronic_med_count_range=pd.NamedAgg(column="chronic_med_count", aggfunc=my_range),
+            num_of_chronic_diagnosis_mean=pd.NamedAgg(column="num_of_chronic_diagnosis", aggfunc="mean"),
+            num_of_chronic_diagnosis_range=pd.NamedAgg(column="num_of_chronic_diagnosis", aggfunc=my_range),
+            diagnosis_count_mean=pd.NamedAgg(column="diagnosis_count", aggfunc="mean"),
+            diagnosis_count_range=pd.NamedAgg(column="diagnosis_count", aggfunc=my_range),
+
         )
         .reset_index()
     )
