@@ -257,12 +257,18 @@ def process_diagnosis(data):
 
 def process_reception_diagnosis(data):
     print("Processing reception diagnosis information...")
-    # Create num_of_diagnosis column
-    data["num_of_reception_diagnosis"] = np.where(
-        data["DiagnosisInReception"].isna() | (data["DiagnosisInReception"] == "NA"),
-        0,
-        data["DiagnosisInReception"].str.split(";").str.len()
-    )
+    try:
+        # Create num_of_diagnosis column
+        data["num_of_reception_diagnosis"] = np.where(
+            data["DiagnosisInReception"].isna() | (data["DiagnosisInReception"] == "NA"),
+            0,
+            data["DiagnosisInReception"].str.split(";").str.len()
+        )
+        print("Reception diagnosis processing completed.")
+        return data
+    except Exception as e:
+        print(f"Error in process_reception_diagnosis: {str(e)}")
+        raise
 
 
 def count_disease_keywords(data):
@@ -407,8 +413,8 @@ def main():
 
     # Process diagnosis information and count disease keywords
     data_diagnosis = process_diagnosis(data_med_count)
-    data_reception_diagnosis = process_reception_diagnosis(data_med_count)
-    data_with_disease_counts = count_disease_keywords(data_reception_diagnosis)
+    data_with_reception = process_reception_diagnosis(data_diagnosis)  # Store the result
+    data_with_disease_counts = count_disease_keywords(data_with_reception)  # Use the stored result
 
     # Calculate Charlson Comorbidity Index Scores
     data_with_cci = calculate_charlson(data_with_disease_counts)
