@@ -46,9 +46,19 @@ The project is organized into several key Python scripts that handle different a
      - `compute_load_index()`: Calculates workload metrics per shift
      - `convert_age_cat()`: Processes age categories
 
+5. **07_ignore_others.py**
+   - Processes ignored orders and their associated text
+   - Merges main data with ignore orders data
+   - Handles UTF-8 encoding for proper text processing
+   - Key features:
+     - Merges data based on drug_order_id
+     - Preserves response reasons text
+     - Outputs UTF-8 encoded CSV file
+     - Returns merged DataFrame for further analysis
+
 ### Data Analysis
 
-5. **main_analysis.ipynb**
+6. **main_analysis.ipynb**
    - Jupyter notebook for exploratory analysis
    - Contains visualizations and statistical summaries
    - Key analyses:
@@ -65,6 +75,7 @@ The project is organized into several key Python scripts that handle different a
 - **Patient Categorization**: Sophisticated patient grouping based on multiple factors
 - **Alert Classification**: Detailed categorization of different alert types
 - **Dose Direction Analysis**: Tracks whether doses exceed or fall below recommended ranges for DRC and NeoDRC alerts
+- **Ignore Orders Processing**: Tracks and analyzes orders that were ignored, including their associated text
 
 ## Column Renaming
 
@@ -98,4 +109,8 @@ print(alert_counts)
 # Analyze dose direction patterns
 dose_direction_counts = src_active_patients_merged['drc_frequency_direction'].value_counts()
 print(dose_direction_counts)
+
+# Process ignore orders
+from ignore_others import main as process_ignore_orders
+ignore_orders_data = process_ignore_orders()
 ```
