@@ -1,8 +1,10 @@
+import os
 import pandas as pd
 from ydata_profiling import ProfileReport
 
-df_active_adult = pd.read_csv('alert_analysis/data/main_data_2022/df_main_active_adult_py_version.csv')
 
+df_active_adult = pd.read_csv('alert_analysis/data/main_data_2022/df_main_active_adult_renamed.csv')
+df_active_adult.shape
 #TODO: create profile report for df_active_adult
 profile = ProfileReport(df_active_adult, title="Data Profiling Report", explorative=True)
 profile.to_file("df_active_adult_profiling_ud.html") # open "1_data_profiling.html" file if you can't see the iframe
@@ -14,7 +16,7 @@ src_tbl1_active_by_patient_gb = pd.read_csv('alert_analysis/data/main_data_2022/
 
 ##TODO: create profile report for src_tbl1_active_by_patient_gb
 profile = ProfileReport(src_tbl1_active_by_patient_gb, title="Data Profiling Report", explorative=True)
-profile.to_file("src_active_patients_merged_profiling_ud.html")
+profile.to_file("patient_level_data_profiling_ud.html")
 profile.to_notebook_iframe()
 
 

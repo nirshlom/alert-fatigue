@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 from datetime import datetime
+import os
 
 
 # -------------------------------
@@ -539,8 +540,8 @@ def save_data(data, output_path):
 # -------------------------------
 
 def main():
-    input_file = 'alert_analysis/data/main_data_2022/emek.data - Copy.csv'
-    output_file = 'alert_analysis/data_process/data_main_prep.csv'
+    input_file = os.path.join('alert_analysis', 'data', 'main_data_2022', 'emek.data - Copy.csv')
+    output_file = os.path.join('alert_analysis', 'data_process', 'data_main_prep.csv')
 
     data = load_data(input_file)
 
