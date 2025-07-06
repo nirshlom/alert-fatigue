@@ -28,7 +28,7 @@ def get_count_columns(df: pd.DataFrame) -> list:
 
 
 def convert_unit_cat(df: pd.DataFrame, col):
-    df[col] = df[col].appy(lambda x: 1 if x > 0 else 0)
+    df[col] = df[col].apply(lambda x: 1 if x > 0 else 0)
     return df
 
 def group_and_save_patient_data(df: pd.DataFrame) -> None:
@@ -193,16 +193,10 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         grouped[bool_col] = grouped[mean_col] > 0
         grouped = grouped.drop(columns=[mean_col])  # drop the mean column
 
-    grouped = convert_unit_cat(df=df, col='unit_Internal')
-    # grouped = convert_unit_cat(df=df, col='unit_Surgery')
-    # grouped = convert_unit_cat(df=df, col='unit_Gynecology')
-    # grouped = convert_unit_cat(df=df, col='unit_Cardiology')
-    # grouped = convert_unit_cat(df=df, col='unit_Emergency')
-    # grouped = convert_unit_cat(df=df, col='unit_Internal-Covid19')
-    # grouped = convert_unit_cat(df=df, col='unit_Geriatric')
-    # grouped = convert_unit_cat(df=df, col='unit_Hematology')
-    # grouped = convert_unit_cat(df=df, col='unit_Nephrology')
-    # grouped = convert_unit_cat(df=df, col='unit_Oncology')
+    # Convert all unit columns to binary (0/1) format
+    unit_columns = [col for col in grouped.columns if col.startswith('unit_')]
+    for col in unit_columns:
+        grouped = convert_unit_cat(df=grouped, col=col)
     
     # Save to CSV
     output_path = 'alert_analysis/data/main_data_2022/df_patients_level_data.csv'
