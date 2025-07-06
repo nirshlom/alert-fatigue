@@ -1,6 +1,5 @@
-
-rename_keep_dict =
-{'Hospital_cat': ['hospital_code', True],
+rename_keep_dict = {
+'Hospital_cat': ['hospital_code', True],
  'HospitalName_EN_cat': ['hospital_name', True],
  'UnitName_cat': ['unit_category', True],
  'SeverityLevelToStopOrder_cat': ['severity_level_to_stop_order', True],
@@ -42,6 +41,7 @@ rename_keep_dict =
  'Order_ID_new_update': ['drug_order_id', True],
  'NumMedAmount_calc': ['medication_orders_hospatalization', True],
  'num_of_diagnosis': ['diagnosis_count', True],
+ 'num_of_reception_diagnosis': ['num_of_chronic_diagnosis', True],
  'diseaseSplit': ['disease_split', True],
  'Charlson_score': ['charlson_score', True],
  'Charlson_score_age_adj': ['charlson_score_age_adj', True],
@@ -51,8 +51,7 @@ rename_keep_dict =
  'drugs_from_AlretMessage': ['drugs_in_alert_message', True],
  'num_of_alerts_per_order_id': ['alerts_per_order_count', True],
  'DAM_CAT': ['allergy', True],
- 'DDI_Contraindicated_Drug_Combination_CAT': ['ddi_contraindicated_severity',
-  True],
+ 'DDI_Contraindicated_Drug_Combination_CAT': ['ddi_contraindicated_severity', True],
  'DDI_Moderate_Interaction_CAT': ['ddi_moderate_severity', True],
  'DDI_Severe_Interaction_CAT': ['ddi_severe_severity', True],
  'DRC_CAT': ['dosing', True],
@@ -83,8 +82,7 @@ rename_keep_dict =
  'JAUNDICE_count': ['jaundice_count', True],
  'MYOCARDIAL_count': ['myocardial_count', True],
  'HEART FAILURE_count': ['heart_failure_count', True],
- 'PERIPHERAL VASCULAR DISEASE_count': ['peripheral_vascular _disease_count',
-  True],
+ 'PERIPHERAL VASCULAR DISEASE_count': ['peripheral_vascular _disease_count', True],
  'PVD_count': ['pvd_count', True],
  'CEREBROVASCULAR_count': ['cerebrovascular_count', True],
  'STROKE_count': ['stroke_count', True],
@@ -92,11 +90,9 @@ rename_keep_dict =
  'TIA_count': ['tia_count', True],
  'CVA_count': ['cva_count', True],
  'DEMENTIA_count': ['dementia_count', True],
- 'CHRONIC PULMONARY DISEASE_count': ['chronic_ pulmonary _disease_count',
-  True],
+ 'CHRONIC PULMONARY DISEASE_count': ['chronic_ pulmonary _disease_count', True],
  'COPD_count': ['copd_count', True],
- 'CHRONIC OBSTRUCTIVE PULMONARY DISEASE_count': ['chronic _obstructive _pulmonary _disease_count',
-  True],
+ 'CHRONIC OBSTRUCTIVE PULMONARY DISEASE_count': ['chronic _obstructive _pulmonary _disease_count', True],
  'RHEUMATOLOGIC DISEASE_count': ['rheumatic_disease_count', True],
  'FIBROMYALGIA_count': ['fibromyalgia_count', True],
  'GOUT_count': ['gout_count', True],
@@ -139,8 +135,15 @@ rename_keep_dict =
  'RENAL_group_cnt': ['renal_group_count', True],
  'MALIGNANCY_group_cnt': ['malignancy_group_count', True],
  'LEUKEMIA_group_cnt': ['leukemia_group_count', True],
- 'METASTATIC_group_cnt': ['metastatic_group_count', True]}
-
+ 'METASTATIC_group_cnt': ['metastatic_group_count', True],
+ 'ATC_GROUP': ['atc_group', True],
+ 'dose_direction_DRC_Frequency_1': ['dosing_frequency_direction', True],
+ 'dose_direction_DRC_Single_Dose_1': ['dosing_single_dose_direction', True],
+ 'dose_direction_DRC_Max_Daily_Dose_1': ['dosing_max_daily_dose_direction', True],
+ 'dose_direction_NeoDRC_Frequency_1': ['neo_dosing_frequency_direction', True],
+ 'dose_direction_NeoDRC_Single_Dose_1': ['neo_dosing_single_dose_direction', True],
+ 'dose_direction_NeoDRC_Max_Daily_Dose_1': ['neo_dosing_max_daily_dose_direction', True]
+}
 
 rename_keep_dict_false = {
     'HospitalName_cat': ['hospital_name_heb', False],

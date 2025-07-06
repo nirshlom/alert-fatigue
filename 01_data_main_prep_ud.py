@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 from datetime import datetime
+import os
 
 
 # -------------------------------
@@ -446,40 +447,50 @@ def process_alert_rn_severity(data):
 
 def process_below_exceed_dose(data):
     """
-    Creates a new column 'Dose' in the DataFrame based on the following conditions:
+    Creates six new columns indicating dose direction (exceeds/below) for different alert types:
+    1. dose_direction_DRC_Frequency_1
+    2. dose_direction_DRC_Single_Dose_1
+    3. dose_direction_DRC_Max_Daily_Dose_1
+    4. dose_direction_NeoDRC_Frequency_1
+    5. dose_direction_NeoDRC_Single_Dose_1
+    6. dose_direction_NeoDRC_Max_Daily_Dose_1
 
-    For rows where 'Module_Alert_Rn' is one of:
-        - "DRC - Frequency 1"
-        - "DRC - Single Dose 1"
-        - "DRC - Max Daily Dose 1"
-
-    It checks the 'Alert_Message' column:
-        - If the message contains "exceeds", 'Dose' is set to "exceeds".
-        - Else if the message contains "below", 'Dose' is set to "below".
-        - Otherwise, 'Dose' is set to None.
+    Each column will contain:
+    - "exceeds" if the alert message contains "exceeds"
+    - "below" if the alert message contains "below"
+    - None otherwise
 
     Parameters:
-        df (pd.DataFrame): Input DataFrame containing 'Module_Alert_Rn' and 'Alert_Message' columns.
+        data (pd.DataFrame): Input DataFrame containing 'Module_Alert_Rn' and 'Alert_Message' columns.
 
     Returns:
-        pd.DataFrame: The modified DataFrame with a new column 'Dose'.
-        :param data:
+        pd.DataFrame: The modified DataFrame with six new dose direction columns.
     """
-    # Ensure 'Alert_Message' column is of string type for .str.contains to work properly.
+    # Ensure 'Alert_Message' column is of string type
     data['Alert_Message'] = data['Alert_Message'].astype(str)
 
-    # Define the modules for which the logic should apply
-    modules_to_check = ["DRC - Frequency 1", "DRC - Single Dose 1", "DRC - Max Daily Dose 1"]
+    # Define the alert types and their corresponding columns
+    alert_types = {
+        'DRC - Frequency 1': 'dose_direction_DRC_Frequency_1',
+        'DRC - Single Dose 1': 'dose_direction_DRC_Single_Dose_1',
+        'DRC - Max Daily Dose 1': 'dose_direction_DRC_Max_Daily_Dose_1',
+        'NeoDRC - Frequency 1': 'dose_direction_NeoDRC_Frequency_1',
+        'NeoDRC - Single Dose 1': 'dose_direction_NeoDRC_Single_Dose_1',
+        'NeoDRC - Max Daily Dose 1': 'dose_direction_NeoDRC_Max_Daily_Dose_1'
+    }
 
-    # Build condition masks using np.select.
-    conditions = [
-        (data['Module_Alert_Rn'].isin(modules_to_check)) & (data['Alert_Message'].str.contains("exceeds", na=False)),
-        (data['Module_Alert_Rn'].isin(modules_to_check)) & (data['Alert_Message'].str.contains("below", na=False))
-    ]
-    choices = ["exceeds", "below"]
+    # Initialize all columns with None
+    for col in alert_types.values():
+        data[col] = None
 
-    # Create the new column 'Dose'
-    data['Dose'] = np.select(conditions, choices, default=None)
+    # Process each alert type
+    for alert_type, col_name in alert_types.items():
+        # Create mask for rows with this alert type
+        mask = data['Module_Alert_Rn'] == alert_type
+        
+        # Set values based on Alert_Message content
+        data.loc[mask & data['Alert_Message'].str.contains("exceeds", na=False), col_name] = "exceeds"
+        data.loc[mask & data['Alert_Message'].str.contains("below", na=False), col_name] = "below"
 
     return data
 
@@ -529,8 +540,8 @@ def save_data(data, output_path):
 # -------------------------------
 
 def main():
-    input_file = 'alert_analysis/data/main_data_2022/emek.data - Copy.csv'
-    output_file = 'alert_analysis/data_process/data_main_prep.csv'
+    input_file = os.path.join('alert_analysis', 'data', 'main_data_2022', 'emek.data - Copy.csv')
+    output_file = os.path.join('alert_analysis', 'data_process', 'data_main_prep.csv')
 
     data = load_data(input_file)
 

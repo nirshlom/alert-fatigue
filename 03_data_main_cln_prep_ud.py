@@ -385,6 +385,8 @@ def add_alert_type_and_status(df: pd.DataFrame) -> pd.DataFrame:
 
 def filter_and_save_final(df: pd.DataFrame) -> None:
     """Filter the final dataset according to given conditions and save to CSV."""
+    print("Starting final filtering and saving process...")
+    
     # Create response type based on alert type and status
     mask_non_alert = (
             (df["Alert_type"] == "Non_alert") &
@@ -398,6 +400,7 @@ def filter_and_save_final(df: pd.DataFrame) -> None:
     )
     df.loc[mask_non_stoping_alert, "ResponseType_cat"] = "Non_stoping_alert"
 
+    # Rename columns
     rename_map = {
         "DRC - Frequency 1": "DRC_Frequency_1",
         "DRC - Single Dose 1": "DRC_Single_Dose_1",
@@ -405,14 +408,17 @@ def filter_and_save_final(df: pd.DataFrame) -> None:
     }
     df.rename(columns=rename_map, inplace=True)
 
+    print("Applying DRC filters...")
+    # Apply filters
     condition_filter = (
             ((df["DRC_Frequency_1"] < 2) | (df["DRC_Frequency_1"].isnull())) &
             ((df["DRC_Single_Dose_1"] < 2) | (df["DRC_Single_Dose_1"].isnull())) &
             ((df["DRC_Max_Daily_Dose_1"] < 2) | (df["DRC_Max_Daily_Dose_1"].isnull()))
     )
+    df_final_filtered = df[condition_filter]
 
-    df_final_filtered = df[condition_filter].copy()
-
+    print("Processing unique validation...")
+    # Process unique validation
     unique_VALIDATION = (
         df_final_filtered
         .groupby("Order_ID_new_update", as_index=False)
@@ -421,19 +427,28 @@ def filter_and_save_final(df: pd.DataFrame) -> None:
     )
     unique_to_delete = unique_VALIDATION.loc[unique_VALIDATION["total_count"] == 2, "Order_ID_new_update"]
 
+    print("Applying final filters...")
+    # Apply final filters
     test_final2 = df_final_filtered[
         (~df_final_filtered["Order_ID_new_update"].isin(unique_to_delete)) &
         (df_final_filtered["Order_ID_new_update"].notna())
-        ].copy()
+    ]
 
+    print("Filtering for non-null ATC_NEW...")
+    # Filter for non-null ATC_NEW
     test_hiba = test_final2[test_final2["ATC_NEW"].notna()]
     print(f'Final shape: {test_hiba.shape[0]}, {test_hiba.shape[1]}')
 
-    # Save for inspection
-    #output_path = "C:/Users/Keren/Desktop/Fatigue_alert/Data/Main_data_2022/df_main_flat_py_version.csv"
+    # Save to CSV
     output_path = "alert_analysis/data/main_data_2022/df_main_flat_py_version.csv"
+    print(f"Saving to {output_path}...")
     test_hiba.to_csv(output_path, index=False)
     print(f"✅ Final flat file saved to {output_path}")
+
+    # Clear memory
+    del df_final_filtered
+    del test_final2
+    del test_hiba
 
 
 def main():
@@ -480,7 +495,8 @@ def main():
     #print(flat_by_sevirity_ud.head(5))
 
     # Copy final dataset for further processing
-    df_final = flat_by_sevirity_ud.copy()
+    df_final = flat_by_sevirity_ud
+    df_final.to_csv('alert_analysis/data_process/df_final_03_process.csv')
 
     # Step 12: Determine Alert Type and Alert Status
     df_final = add_alert_type_and_status(df_final)

@@ -1,0 +1,14 @@
+# Alert Fatigue Project Configuration
+
+# Set project-specific environment variables
+export PYTHONPATH="/Users/eveadam/Dropbox/PHD/alert-fatigue"
+
+# Activate the project's virtual environment if it exists
+if [ -d ".venv" ]; then
+    source .venv/bin/activate
+fi
+
+# Print project information
+echo "Alert Fatigue Project Environment Loaded"
+echo "Working Directory: $(pwd)"
+echo "Python Path: $PYTHONPATH" 
