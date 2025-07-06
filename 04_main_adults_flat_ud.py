@@ -106,6 +106,66 @@ def save_data(df: pd.DataFrame, file_path: str):
     df.to_csv(file_path, index=False)
     print("Data saved successfully.")
 
+def create_atc_group(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Create ATC_GROUP column based on ATC_NEW prefixes.
+    Maps ATC codes to drug categories.
+    """
+    print("\nCreating ATC_GROUP column...")
+    
+    # Define a mapping of ATC_NEW prefixes to their group names
+    atc_mapping = [
+        ("A02", "DRUGS FOR ACID RELATED DISORDERS"),
+        ("A04", "ANTIEMETICS AND ANTINAUSEANTS"),
+        ("A06", "DRUGS FOR CONSTIPATION"),
+        ("A10", "DRUGS USED IN DIABETES"),
+        ("A11", "VITAMINS"),
+        ("A12", "MINERAL SUPPLEMENTS"),
+        ("B01", "ANTITHROMBOTIC AGENTS"),
+        ("B02", "ANTIHEMORRHAGICS"),
+        ("B03", "ANTIANEMIC PREPARATIONS"),
+        ("B05", "BLOOD SUBSTITUTES AND PERFUSION SOLUTIONS"),
+        ("C01", "CARDIAC THERAPY"),
+        ("C02", "ANTIHYPERTENSIVES"),
+        ("C03", "DIURETICS"),
+        ("C07", "BETA BLOCKING AGENTS"),
+        ("C08", "CALCIUM CHANNEL BLOCKERS"),
+        ("C09", "AGENTS ACTING ON THE RENIN-ANGIOTENSIN SYSTEM"),
+        ("C10", "LIPID MODIFYING AGENTS"),
+        ("G04", "UROLOGICALS"),
+        ("H02", "CORTICOSTEROIDS FOR SYSTEMIC USE"),
+        ("H03", "THYROID THERAPY"),
+        ("J01", "ANTIBACTERIALS FOR SYSTEMIC USE"),
+        ("J02", "ANTIMYCOTICS FOR SYSTEMIC USE"),
+        ("J05", "ANTIVIRALS FOR SYSTEMIC USE"),
+        ("L01", "ANTINEOPLASTIC AGENTS"),
+        ("L03", "IMMUNOSTIMULANTS"),
+        ("L04", "IMMUNOSUPPRESSANTS"),
+        ("N01", "ANESTHETICS"),
+        ("N02", "ANALGESICS"),
+        ("N03", "ANTIEPILEPTICS"),
+        ("N04", "ANTI-PARKINSON "),
+        ("N05", "PSYCHOLEPTICS"),
+        ("N06", "PSYCHOANALEPTICS"),
+        ("N07", "OTHER NERVOUS SYSTEM DRUGS"),
+        ("R03", "DRUGS FOR OBSTRUCTIVE AIRWAY DISEASES"),
+        ("V03", "ALL OTHER THERAPEUTIC PRODUCTS")
+    ]
+    
+    # Convert each condition to a NumPy boolean array
+    conditions = [
+        df["ATC_NEW"].str.startswith(prefix).to_numpy()
+        for prefix, _ in atc_mapping
+    ]
+    choices = [group for _, group in atc_mapping]
+    
+    # Create ATC_GROUP column using np.select
+    df["ATC_GROUP"] = np.select(conditions, choices, default="OTHER")
+    
+    print(f"ATC_GROUP column created. Categories: {df['ATC_GROUP'].value_counts().to_dict()}")
+    return df
+
+
 def filter_rows_by_conditions(df: pd.DataFrame, conditions_dict: dict) -> pd.DataFrame:
     """
     Filter DataFrame rows based on specified column conditions.
@@ -202,6 +262,9 @@ def main():
     df_active_adult = filter_active_adult(df)
     print("\nSummary of df_main_active_adult:")
     print(df_active_adult.describe(include='all'))
+
+    # 8.5. Create ATC_GROUP column
+    df_active_adult = create_atc_group(df_active_adult)
 
     # 9. Update the categories of 'UnitName_cat'.
     new_categories = [
