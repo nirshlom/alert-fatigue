@@ -217,6 +217,13 @@ def main():
         'SectorText_EN_cat': lambda x: x != 'PARAMEDICAL'
         }
         )
+    
+    # Exclude hospitals 243, 113, 29 using filter_rows_by_conditions:
+    df_active_adult = filter_rows_by_conditions(
+        df_active_adult, conditions_dict = {
+        'Hospital_cat': lambda x: ~x.isin(["243", "113", "29"])
+        }
+        )
 
     # 10. Save the filtered DataFrame.
     save_data(df_active_adult, output_file)
