@@ -27,6 +27,10 @@ def get_count_columns(df: pd.DataFrame) -> list:
     return count_columns
 
 
+def convert_unit_cat(df: pd.DataFrame, col):
+    df[col] = df[col].appy(lambda x: 1 if x > 0 else 0)
+    return df
+
 def group_and_save_patient_data(df: pd.DataFrame) -> None:
     """Group data by patient and save to CSV."""
     # Get all count columns
@@ -57,7 +61,8 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         'medication_orders_hospatalization',
         'survival_rate_10y_age_adj',
         'charlson_score_age_adj',
-        'hospital_days'
+        'hospital_days',
+        'num_of_chronic_diagnosis',
     ] + count_columns  # Add all count columns
     
     missing_columns = [col for col in required_columns if col not in df.columns]
@@ -187,6 +192,17 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         bool_col = f"{col}_bool"
         grouped[bool_col] = grouped[mean_col] > 0
         grouped = grouped.drop(columns=[mean_col])  # drop the mean column
+
+    grouped = convert_unit_cat(df=df, col='unit_Internal')
+    # grouped = convert_unit_cat(df=df, col='unit_Surgery')
+    # grouped = convert_unit_cat(df=df, col='unit_Gynecology')
+    # grouped = convert_unit_cat(df=df, col='unit_Cardiology')
+    # grouped = convert_unit_cat(df=df, col='unit_Emergency')
+    # grouped = convert_unit_cat(df=df, col='unit_Internal-Covid19')
+    # grouped = convert_unit_cat(df=df, col='unit_Geriatric')
+    # grouped = convert_unit_cat(df=df, col='unit_Hematology')
+    # grouped = convert_unit_cat(df=df, col='unit_Nephrology')
+    # grouped = convert_unit_cat(df=df, col='unit_Oncology')
     
     # Save to CSV
     output_path = 'alert_analysis/data/main_data_2022/df_patients_level_data.csv'
