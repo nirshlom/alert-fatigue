@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 def read_data(file_path: str) -> pd.DataFrame:
     """Read CSV file into a DataFrame."""
