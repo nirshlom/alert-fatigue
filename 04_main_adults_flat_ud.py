@@ -224,6 +224,11 @@ def main():
         'Hospital_cat': lambda x: ~x.isin(["243", "113", "29"])
         }
         )
+    
+    # add print after rows exclusions:
+    print(f"\nFinal data shape after all exclusions: {df_active_adult.shape}")
+    print(f"Number of rows: {len(df_active_adult)}")
+    print(f"Number of columns: {len(df_active_adult.columns)}")
 
     # 10. Save the filtered DataFrame.
     save_data(df_active_adult, output_file)
