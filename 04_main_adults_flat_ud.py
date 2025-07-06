@@ -74,9 +74,8 @@ def filter_active_adult(df: pd.DataFrame) -> pd.DataFrame:
     conditions = (
         df['SeverityLevelToStopOrder_cat'].notna() & (df['SeverityLevelToStopOrder_cat'] != "Silence Mode") &
         df['adult_child_cat'].notna() & (df['adult_child_cat'] == "adult") &
-        df['Hospital_cat'].notna() & (df['Hospital_cat'] != "243") &
-        (df['Hospital_cat'] != "113") &
-        (df['Hospital_cat'] != "29") &
+        df['Hospital_cat'].notna() & 
+        ~df['Hospital_cat'].isin(["243", "113", "29"]) &
         df['UnitName_cat'].notna() & (df['UnitName_cat'].str.strip() != "Day_care") &
         (df['UnitName_cat'] != "ICU") &
         (df['UnitName_cat'] != "Pediatric") &
