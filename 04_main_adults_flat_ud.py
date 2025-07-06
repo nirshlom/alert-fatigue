@@ -75,7 +75,7 @@ def filter_active_adult(df: pd.DataFrame) -> pd.DataFrame:
         df['SeverityLevelToStopOrder_cat'].notna() & (df['SeverityLevelToStopOrder_cat'] != "Silence Mode") &
         df['adult_child_cat'].notna() & (df['adult_child_cat'] == "adult") &
         df['Hospital_cat'].notna() & 
-        ~df['Hospital_cat'].isin(["243", "113", "29"]) &
+        ~df['Hospital_cat'].isin([243, 113, 29]) &
         df['UnitName_cat'].notna() & (df['UnitName_cat'].str.strip() != "Day_care") &
         (df['UnitName_cat'] != "ICU") &
         (df['UnitName_cat'] != "Pediatric") &
@@ -221,7 +221,7 @@ def main():
     # Exclude hospitals 243, 113, 29 using filter_rows_by_conditions:
     df_active_adult = filter_rows_by_conditions(
         df_active_adult, conditions_dict = {
-        'Hospital_cat': lambda x: ~x.isin(["243", "113", "29"])
+        'Hospital_cat': lambda x: ~x.isin([243, 113, 29])
         }
         )
     
