@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 def read_data(file_path: str) -> pd.DataFrame:
     """Read CSV file into a DataFrame."""
@@ -74,9 +75,8 @@ def filter_active_adult(df: pd.DataFrame) -> pd.DataFrame:
     conditions = (
         df['SeverityLevelToStopOrder_cat'].notna() & (df['SeverityLevelToStopOrder_cat'] != "Silence Mode") &
         df['adult_child_cat'].notna() & (df['adult_child_cat'] == "adult") &
-        df['Hospital_cat'].notna() & (df['Hospital_cat'] != "243") &
-        (df['Hospital_cat'] != "113") &
-        (df['Hospital_cat'] != "29") &
+        df['Hospital_cat'].notna() & 
+        ~df['Hospital_cat'].isin([243, 113, 29]) &
         df['UnitName_cat'].notna() & (df['UnitName_cat'].str.strip() != "Day_care") &
         (df['UnitName_cat'] != "ICU") &
         (df['UnitName_cat'] != "Pediatric") &
@@ -106,6 +106,66 @@ def save_data(df: pd.DataFrame, file_path: str):
     print(f"\nSaving filtered data to {file_path} ...")
     df.to_csv(file_path, index=False)
     print("Data saved successfully.")
+
+def create_atc_group(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Create ATC_GROUP column based on ATC_NEW prefixes.
+    Maps ATC codes to drug categories.
+    """
+    print("\nCreating ATC_GROUP column...")
+    
+    # Define a mapping of ATC_NEW prefixes to their group names
+    atc_mapping = [
+        ("A02", "DRUGS FOR ACID RELATED DISORDERS"),
+        ("A04", "ANTIEMETICS AND ANTINAUSEANTS"),
+        ("A06", "DRUGS FOR CONSTIPATION"),
+        ("A10", "DRUGS USED IN DIABETES"),
+        ("A11", "VITAMINS"),
+        ("A12", "MINERAL SUPPLEMENTS"),
+        ("B01", "ANTITHROMBOTIC AGENTS"),
+        ("B02", "ANTIHEMORRHAGICS"),
+        ("B03", "ANTIANEMIC PREPARATIONS"),
+        ("B05", "BLOOD SUBSTITUTES AND PERFUSION SOLUTIONS"),
+        ("C01", "CARDIAC THERAPY"),
+        ("C02", "ANTIHYPERTENSIVES"),
+        ("C03", "DIURETICS"),
+        ("C07", "BETA BLOCKING AGENTS"),
+        ("C08", "CALCIUM CHANNEL BLOCKERS"),
+        ("C09", "AGENTS ACTING ON THE RENIN-ANGIOTENSIN SYSTEM"),
+        ("C10", "LIPID MODIFYING AGENTS"),
+        ("G04", "UROLOGICALS"),
+        ("H02", "CORTICOSTEROIDS FOR SYSTEMIC USE"),
+        ("H03", "THYROID THERAPY"),
+        ("J01", "ANTIBACTERIALS FOR SYSTEMIC USE"),
+        ("J02", "ANTIMYCOTICS FOR SYSTEMIC USE"),
+        ("J05", "ANTIVIRALS FOR SYSTEMIC USE"),
+        ("L01", "ANTINEOPLASTIC AGENTS"),
+        ("L03", "IMMUNOSTIMULANTS"),
+        ("L04", "IMMUNOSUPPRESSANTS"),
+        ("N01", "ANESTHETICS"),
+        ("N02", "ANALGESICS"),
+        ("N03", "ANTIEPILEPTICS"),
+        ("N04", "ANTI-PARKINSON "),
+        ("N05", "PSYCHOLEPTICS"),
+        ("N06", "PSYCHOANALEPTICS"),
+        ("N07", "OTHER NERVOUS SYSTEM DRUGS"),
+        ("R03", "DRUGS FOR OBSTRUCTIVE AIRWAY DISEASES"),
+        ("V03", "ALL OTHER THERAPEUTIC PRODUCTS")
+    ]
+    
+    # Convert each condition to a NumPy boolean array
+    conditions = [
+        df["ATC_NEW"].str.startswith(prefix).to_numpy()
+        for prefix, _ in atc_mapping
+    ]
+    choices = [group for _, group in atc_mapping]
+    
+    # Create ATC_GROUP column using np.select
+    df["ATC_GROUP"] = np.select(conditions, choices, default="OTHER")
+    
+    print(f"ATC_GROUP column created. Categories: {df['ATC_GROUP'].value_counts().to_dict()}")
+    return df
+
 
 def filter_rows_by_conditions(df: pd.DataFrame, conditions_dict: dict) -> pd.DataFrame:
     """
@@ -204,6 +264,9 @@ def main():
     print("\nSummary of df_main_active_adult:")
     print(df_active_adult.describe(include='all'))
 
+    # 8.5. Create ATC_GROUP column
+    df_active_adult = create_atc_group(df_active_adult)
+
     # 9. Update the categories of 'UnitName_cat'.
     new_categories = [
         "Internal", "Cardiology", "Emergency", "Geriatric", "Gynecology",
@@ -218,6 +281,18 @@ def main():
         'SectorText_EN_cat': lambda x: x != 'PARAMEDICAL'
         }
         )
+    
+    # Exclude hospitals 243, 113, 29 using filter_rows_by_conditions:
+    df_active_adult = filter_rows_by_conditions(
+        df_active_adult, conditions_dict = {
+        'Hospital_cat': lambda x: ~x.isin([243, 113, 29])
+        }
+        )
+    
+    # add print after rows exclusions:
+    print(f"\nFinal data shape after all exclusions: {df_active_adult.shape}")
+    print(f"Number of rows: {len(df_active_adult)}")
+    print(f"Number of columns: {len(df_active_adult.columns)}")
 
     # 10. Save the filtered DataFrame.
     save_data(df_active_adult, output_file)

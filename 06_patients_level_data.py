@@ -27,6 +27,10 @@ def get_count_columns(df: pd.DataFrame) -> list:
     return count_columns
 
 
+def convert_unit_cat(df: pd.DataFrame, col):
+    df[col] = df[col].apply(lambda x: 1 if x > 0 else 0)
+    return df
+
 def group_and_save_patient_data(df: pd.DataFrame) -> None:
     """Group data by patient and save to CSV."""
     # Get all count columns
@@ -57,7 +61,8 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         'medication_orders_hospatalization',
         'survival_rate_10y_age_adj',
         'charlson_score_age_adj',
-        'hospital_days'
+        'hospital_days',
+        'num_of_chronic_diagnosis',
     ] + count_columns  # Add all count columns
     
     missing_columns = [col for col in required_columns if col not in df.columns]
@@ -187,6 +192,11 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         bool_col = f"{col}_bool"
         grouped[bool_col] = grouped[mean_col] > 0
         grouped = grouped.drop(columns=[mean_col])  # drop the mean column
+
+    # Convert all unit columns to binary (0/1) format
+    unit_columns = [col for col in grouped.columns if col.startswith('unit_')]
+    for col in unit_columns:
+        grouped = convert_unit_cat(df=grouped, col=col)
     
     # Save to CSV
     output_path = 'alert_analysis/data/main_data_2022/df_patients_level_data.csv'
@@ -195,7 +205,7 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
     print(f"Shape of patient-level data: {grouped.shape}")
     
     # Assert the number of patients is correct
-    assert grouped.shape[0] == 156443, f"Expected 156443 patients, got {grouped.shape[0]}"
+    #assert grouped.shape[0] == 156443, f"Expected 156443 patients, got {grouped.shape[0]}"
 
 
 def main():

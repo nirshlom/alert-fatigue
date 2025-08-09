@@ -4,9 +4,11 @@ A comprehensive analysis system for studying alert fatigue in healthcare setting
 
 ## Project Structure
 
-The project is organized into several key Python scripts that handle different aspects of the data processing and analysis pipeline:
+The project is organized into a data processing pipeline with several key Python scripts that handle different aspects of the analysis:
 
-### Data Preparation and Processing
+### Data Processing Pipeline
+
+**Main Pipeline (Run in Order):**
 
 1. **01_data_main_prep_ud.py**
    - Initial data preprocessing and cleaning
@@ -42,30 +44,49 @@ The project is organized into several key Python scripts that handle different a
    - Focuses on adult patient analysis
    - Computes load indices and shift patterns
    - Handles age categorization and filtering
+   - Filters out specific hospitals (243, 113, 29) and units (Day_care, ICU, Pediatric, Rehabilitation)
    - Key functions:
      - `compute_load_index()`: Calculates workload metrics per shift
      - `convert_age_cat()`: Processes age categories
+     - `filter_active_adult()`: Filters for active adult patients
 
-5. **07_ignore_others.py**
+5. **05_rename_columns.py**
+   - Standardizes column names throughout the pipeline
+   - Uses comprehensive renaming dictionaries from `column_rename.py`
+   - Filters and renames columns based on mapping rules
+   - Key functions:
+     - `rename_and_filter_columns()`: Applies column renaming and filtering
+     - `report_column_mapping()`: Reports which columns are kept/dropped
+
+6. **06_patients_level_data.py**
+   - Aggregates data to patient level
+   - Creates patient-level summaries and counts
+   - Converts unit and alert counts to binary format
+   - Handles disease-related boolean conversions
+   - Key functions:
+     - `group_and_save_patient_data()`: Main aggregation function
+     - `convert_unit_cat()`: Converts unit counts to binary (0/1)
+     - `get_count_columns()`: Identifies count columns for processing
+
+### Standalone Scripts
+
+**07_ignore_others.py** (Standalone - Not part of main pipeline)
    - Processes ignored orders and their associated text
    - Merges main data with ignore orders data
-   - Handles UTF-8 encoding for proper text processing
+   - Handles UTF-8 encoding for proper Hebrew text processing
    - Key features:
      - Merges data based on drug_order_id
      - Preserves response reasons text
      - Outputs UTF-8 encoded CSV file
      - Returns merged DataFrame for further analysis
 
-### Data Analysis
+### Analysis and Utilities
 
-6. **main_analysis.ipynb**
-   - Jupyter notebook for exploratory analysis
-   - Contains visualizations and statistical summaries
-   - Key analyses:
-     - Patient characteristics by gender
-     - Alert type distribution
-     - Order analysis by ATC group
-     - Dose direction analysis for DRC and NeoDRC alerts
+- **main_analysis.ipynb**: Jupyter notebook for exploratory analysis
+- **patient_descriptive_analysis.ipynb**: Patient-level descriptive statistics
+- **column_rename.py**: Comprehensive column renaming dictionaries
+- **charlson_index.py**: Charlson Comorbidity Index calculations
+- **data_handler.py**: Utility functions for data handling
 
 ## Key Features
 
@@ -75,7 +96,8 @@ The project is organized into several key Python scripts that handle different a
 - **Patient Categorization**: Sophisticated patient grouping based on multiple factors
 - **Alert Classification**: Detailed categorization of different alert types
 - **Dose Direction Analysis**: Tracks whether doses exceed or fall below recommended ranges for DRC and NeoDRC alerts
-- **Ignore Orders Processing**: Tracks and analyzes orders that were ignored, including their associated text
+- **Hospital Filtering**: Automatically excludes specific hospitals (243, 113, 29) and units (Day_care, ICU, Pediatric, Rehabilitation)
+- **Patient-Level Aggregation**: Creates comprehensive patient-level datasets with binary indicators
 
 ## Column Renaming
 
@@ -91,26 +113,46 @@ The project includes a comprehensive column renaming system (`column_rename.py`)
   - `dose_direction_NeoDRC_Single_Dose_1` → `neodrc_single_dose_direction`
   - `dose_direction_NeoDRC_Max_Daily_Dose_1` → `neodrc_max_daily_dose_direction`
 
+## Pipeline Flow
+
+```
+Raw Data → 01_data_main_prep_ud.py → 02_data_main_prep_ud.py → 03_data_main_cln_prep_ud.py 
+→ 04_main_adults_flat_ud.py → 05_rename_columns.py → 06_patients_level_data.py → Final Analysis
+```
+
 ## Example Usage
 
 ```python
-# Example of processing hospital data
-from data_handler import df_active_adult
+# Run the complete pipeline
+# 1. Initial data preparation
+python 01_data_main_prep_ud.py
 
-# Load and process main data
-data_main = load_main_data()
-data_grouped = group_and_deduplicate(data_main)
-data_selected = select_columns(data_grouped)
+# 2. Column selection and transformation
+python 02_data_main_prep_ud.py
 
-# Analyze alert patterns
-alert_counts = src_active_patients_merged['alert_type'].value_counts()
-print(alert_counts)
+# 3. Data cleaning and final preparation
+python 03_data_main_cln_prep_ud.py
 
-# Analyze dose direction patterns
-dose_direction_counts = src_active_patients_merged['drc_frequency_direction'].value_counts()
-print(dose_direction_counts)
+# 4. Adult patient filtering and analysis
+python 04_main_adults_flat_ud.py
 
-# Process ignore orders
-from ignore_others import main as process_ignore_orders
-ignore_orders_data = process_ignore_orders()
+# 5. Column renaming
+python 05_rename_columns.py
+
+# 6. Patient-level aggregation
+python 06_patients_level_data.py
+
+# Standalone: Process ignore orders (if needed)
+python 07_ignore_others.py
 ```
+
+## Data Outputs
+
+The pipeline produces several key outputs:
+- `df_main_active_adult_renamed.csv`: Clean, renamed data for active adult patients
+- `df_patients_level_data.csv`: Patient-level aggregated data with binary indicators
+- `ignore_orders_with_text.csv`: Ignored orders with associated text (standalone script)
+
+## Requirements
+
+See `requirements.txt` for the complete list of Python dependencies.

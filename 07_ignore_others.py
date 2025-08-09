@@ -20,9 +20,11 @@ def main():
         how='inner'
     )
 
-    # Save the merged result
+    print(merged_df.head(20))
+
+    # Save the merged result with UTF-8 BOM encoding for Hebrew text
     output_path = 'alert_analysis/data/main_data_2022/ignore_orders_with_text.csv'
-    merged_df.to_csv(output_path, index=False, encoding='utf-8')
+    merged_df.to_csv(output_path, index=False, encoding='utf-8-sig')
 
     print(f"✅ Merged data saved to {output_path}")
     print(f"Shape of merged data: {merged_df.shape}")
