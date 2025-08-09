@@ -1,0 +1,18 @@
+#TODO: create a model training pipeline to predict alert fatigue and medication errors
+step 1: simple model: logistice regression, create a frame work to train a model
+a. a function to split train eval and test set (holdout set). a total of 3 sets
+b. function to preprocess the data for training (should be applied on all 3 sets), preprocess is relevant for LR, but if we can avoid one hot encoding (like using statmodels package) than its better. split class and make it binary, and any other preprocessing that you can think of.
+A function to report training set description: basically run ProfileReport on the training set
+Model training class: because its a model training pipeline, I need flexibilty in model params. for example, list of features to model should be a class input, the evaluation will be done only on eval set.
+A function to run predict and get the model scores on eval set.
+results reporting: a function to report the results: get the model betas and convert to odds ratio (exp(beta)).
+a function that plot the OR - forest plot
+a function that shows: precision and recall (on eval set) curve and a table of precision recall for different score thresholds (10 precantiles)
+
+General notes:
+- write a class of model training pipelien, seperate between major steps and put in a different .py files.
+- make the code simple and redable as possible
+- create a readme.md file that describes the process, shows example etc.
+- design the code in a way that the next phase will be using different model than LR, I guess it will be Catboost/ Xgboost.
+- write everything in the model_pipeline folder
+
