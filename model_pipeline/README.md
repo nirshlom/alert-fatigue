@@ -16,7 +16,7 @@
 ### High-Level Flow
 1. Load data.
 2. Predictive split into Train / Eval / Test by time order (percent allocations).
-3. Profile training set (HTML ProfileReport saved).
+3. (Optional) Profile training set (HTML ProfileReport). Disabled by default.
 4. Preprocess (fit on train; transform train/eval/test consistently; impute/scale optional).
 5. Train logistic regression (statsmodels Logit or GLM Binomial).
 6. Evaluate on eval set: predictions, PR curve, decile threshold metrics.
@@ -66,7 +66,7 @@
 - Optional: pick a default threshold (0.5 or F1-max) for headline metrics.
 
 ### Reporting and Artifacts
-- Training ProfileReport (HTML) via `ydata-profiling`.
+- Training ProfileReport (HTML) via `ydata-profiling` (optional; enable via `generate_profile=True`).
 - Coefficients → OR table (with 95% CI) saved as CSV.
 - Forest plot of ORs (sorted by distance from 1.0) saved as PNG.
 - PR curve plot saved as PNG.
