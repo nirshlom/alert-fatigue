@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script to run only the preprocessing step of the Alert Fatigue Analysis pipeline.
-This allows you to inspect the data after preprocessing before running the full training.
+Run script for the Alert Fatigue Analysis pipeline.
+This script runs the complete model training pipeline with the specified configuration.
 """
 
 import sys
@@ -12,13 +12,11 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from model_pipeline.config import TrainingConfig
-from model_pipeline.pipeline import run_preprocessing_only
+from model_pipeline.pipeline import run_full_training, run_preprocessing_only
+
 
 def main():
-    """Run only the preprocessing step."""
-    
-    print("Alert Fatigue Analysis - Preprocessing Only")
-    print("=" * 50)
+    """Main function to run the pipeline with the specified configuration."""
     
     # Define your configuration
     csv_path = "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_sample_10pct_binary.csv"
@@ -26,6 +24,8 @@ def main():
     target_col = "alert_status_binary"
     features = ["age", "gender", "hospital_days", "charlson_score"]
     
+    print("Alert Fatigue Analysis Pipeline")
+    print("=" * 50)
     print(f"Input CSV: {csv_path}")
     print(f"Date Column: {date_col}")
     print(f"Target Column: {target_col}")
@@ -61,37 +61,40 @@ def main():
     # Validate configuration
     try:
         config.validate()
-        print("✓ Configuration validated successfully!")
+        print("Configuration validated successfully!")
     except ValueError as e:
-        print(f"✗ Configuration error: {e}")
+        print(f"Configuration error: {e}")
         return
     
-    print("\nStarting preprocessing pipeline...")
+    print("\nStarting pipeline execution...")
     print("-" * 30)
     
     try:
-        # Run preprocessing only
-        train_df, eval_df, test_df, artifacts = run_preprocessing_only(config)
+        # Run the full training pipeline
+        results = run_full_training(config)
         
-        print(f"\n✓ Preprocessing completed successfully!")
-        print(f"✓ Data ready for training:")
-        print(f"  - Training set: {len(train_df):,} samples")
-        print(f"  - Evaluation set: {len(eval_df):,} samples")
-        print(f"  - Test set: {len(test_df):,} samples")
-        
-        if artifacts.get('run_directory'):
-            print(f"✓ Profile report saved to: {artifacts['run_directory']}")
-        
-        print(f"\nNext steps:")
-        print(f"  1. Review the preprocessing logs above")
-        print(f"  2. Check the profile report if generated")
-        print(f"  3. Run the full training pipeline when ready")
-        print(f"  4. Or use the preprocessed data for custom analysis")
+        print("\nPipeline completed successfully!")
+        print(f"Results saved to: {results['run_directory']}")
+        print(f"Run summary: {results['run_directory']}/run_summary.json")
         
     except Exception as e:
-        print(f"\n✗ ERROR during preprocessing: {e}")
+        print(f"\nERROR: Pipeline failed with exception: {e}")
         import traceback
         traceback.print_exc()
+        
+        # Try to run just preprocessing to isolate the issue
+        print("\nAttempting to run preprocessing only to isolate the issue...")
+        try:
+            train_df, eval_df, test_df, artifacts = run_preprocessing_only(config)
+            print("Preprocessing completed successfully!")
+            print(f"Train samples: {len(train_df)}")
+            print(f"Eval samples: {len(eval_df)}")
+            print(f"Test samples: {len(test_df)}")
+        except Exception as preprocess_error:
+            print(f"Preprocessing also failed: {preprocess_error}")
+            import traceback
+            traceback.print_exc()
+
 
 if __name__ == "__main__":
     main()

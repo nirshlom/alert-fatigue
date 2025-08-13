@@ -1,19 +1,50 @@
-## Model Training Pipeline – Design Document
+# Alert Fatigue Analysis - Model Training Pipeline
 
-### Objectives
+## Overview
+A comprehensive machine learning pipeline for predicting alert fatigue and medication errors in healthcare settings. This pipeline implements logistic regression models with robust preprocessing, time-based data splitting, and comprehensive evaluation metrics.
+
+## Essential Files Structure
+```
+model_pipeline/
+├── pipeline.py              # Main pipeline orchestrator
+├── run_pipeline.py          # Full pipeline execution (preprocessing + training)
+├── run_preprocessing.py     # Preprocessing only execution
+├── run_training_only.py     # Training only execution
+├── config.py                # Configuration classes and defaults
+├── data_loading.py          # Data loading and validation functions
+├── split.py                 # Time-based data splitting functions
+├── preprocess.py            # Data preprocessing and transformation
+├── README.md                # This documentation file
+├── evaluation/              # Model evaluation and metrics
+│   ├── __init__.py
+│   ├── metrics.py          # PR curves, ROC curves, threshold metrics
+│   └── plots.py            # Visualization plots (forest, PR curves)
+├── models/                  # Machine learning model implementations
+│   ├── __init__.py
+│   ├── base.py             # Base classifier interface
+│   └── statsmodels_logit.py # Logistic regression implementation
+├── reporting/               # Results reporting and saving
+│   ├── __init__.py
+│   ├── coefficients.py     # Coefficient analysis and odds ratios
+│   ├── profile.py          # Data profiling reports
+│   └── save.py             # File saving and directory management
+└── outputs/                 # Pipeline outputs and results
+```
+
+## Objectives
 - Build a simple, readable, modular pipeline to predict alert fatigue/medication errors.
 - Baseline model: logistic regression via statsmodels (avoid manual one-hot encoding with patsy formulas).
 - Strict separation of steps; extensible to CatBoost/XGBoost next.
 - All code and artifacts live under `model_pipeline/`.
 
-### Inputs and Assumptions
+## Inputs and Assumptions
 - Input: CSV from the data pipeline (e.g., `df_main_active_adult_renamed.csv` or `df_patients_level_data.csv`).
 - Binary target column is provided by config (e.g., `target_column`).
 - Feature list provided by config. Other columns ignored.
 - Categorical features handled through statsmodels formula terms `C(col)` with frozen levels.
 - Numeric imputation and scaling are optional and controlled via function inputs (see Preprocessing).
 
-### High-Level Flow
+## High-Level Flow
 1. Load data.
 2. Predictive split into Train / Eval / Test by time order (percent allocations).
 3. (Optional) Profile training set (HTML ProfileReport). Disabled by default.
@@ -23,7 +54,7 @@
 7. Report results: coefficients → odds ratios (OR) with CIs; forest plot; PR curve plot; threshold table.
 8. Persist artifacts and a `run_summary.json` in a timestamped run folder.
 
-### Predictive Split (Time-Based)
+## Predictive Split (Time-Based)
 - Purpose: mimic real-world prediction by training on earlier data and evaluating on later periods.
 - Inputs:
   - `date_column: str` – column with sortable datetime.
@@ -36,7 +67,7 @@
   - If `stratify=True`, perform label-aware allocation within contiguous time buckets to reduce class imbalance drift, while maintaining temporal order.
 - Output: `train_df`, `eval_df`, `test_df` and a summary of class proportions across splits.
 
-### Preprocessing (Optional Impute/Scale)
+## Preprocessing (Optional Impute/Scale)
 - Fit on Train only; apply to Eval/Test; persist parameters in-memory and to disk.
 - Function inputs control behavior:
   - `impute_numeric: bool` (default True) – if True, impute numeric with Train medians.
@@ -51,7 +82,7 @@
   - Freeze category levels from Train; unseen categories in Eval/Test map to "Other".
   - Pass frozen levels to patsy via `C(col, levels=[...])` to stabilize encoding across splits.
 
-### Modeling (Statsmodels Logistic Regression)
+## Modeling (Statsmodels Logistic Regression)
 - Wrapper builds a patsy formula from `feature_columns` and `target_column`:
   - Numeric features included directly.
   - Categorical features included as `C(col, levels=[...])` with Train-frozen levels.
@@ -59,13 +90,13 @@
 - Predict probabilities on Eval/Test given preprocessed frames with the same schema.
 - Extract coefficients, standard errors, and CIs for reporting; convert to ORs.
 
-### Evaluation (on Eval Set)
+## Evaluation (on Eval Set)
 - Compute predicted probabilities.
 - Precision–Recall (PR) curve and AUC-PR.
 - Threshold table at 10 percentiles (0.1–1.0): threshold, precision, recall, F1, specificity, accuracy, positive rate, TP/FP/TN/FN counts.
 - Optional: pick a default threshold (0.5 or F1-max) for headline metrics.
 
-### Reporting and Artifacts
+## Reporting and Artifacts
 - Training ProfileReport (HTML) via `ydata-profiling` (optional; enable via `generate_profile=True`).
 - Coefficients → OR table (with 95% CI) saved as CSV.
 - Forest plot of ORs (sorted by distance from 1.0) saved as PNG.
@@ -78,7 +109,7 @@
   - `coefficients_or.csv`, `coefficients_forest.png`
   - `pr_curve.png`, `threshold_metrics.csv`, `eval_predictions.csv`
 
-### Module Layout (all under `model_pipeline/`)
+## Module Layout
 - `config.py` – dataclasses/defaults for configuration (paths, columns, seed, split, preprocessing flags).
 - `data_loading.py` – CSV loading, dtype parsing, column validation.
 - `split.py` – predictive time-based split; optional stratified-random split for comparison.
@@ -94,9 +125,9 @@
   - `coefficients.py` – OR table from fitted result.
   - `save.py` – run folder management and safe file writes.
 - `pipeline.py` – `ModelTrainingPipeline` orchestrator.
-- `run_training.py` – CLI entry point.
+- `run_pipeline.py` – Main execution script.
 
-### Configuration (key fields)
+## Configuration (key fields)
 ```python
 TrainingConfig(
   input_csv_path: str,
@@ -117,7 +148,77 @@ TrainingConfig(
 )
 ```
 
-### Minimal Public APIs (signatures)
+## Quick Start
+1. **Prepare your data**: Ensure you have a CSV with your features and a binary target column
+2. **Update configuration**: Modify the configuration in your chosen script
+3. **Choose your execution mode** (run from the root `alert-fatigue` directory):
+   - **Full pipeline**: `python run_pipeline.py` (preprocessing + training)
+   - **Preprocessing only**: `python run_preprocessing.py` (data preparation + inspection)
+   - **Training only**: `python run_training_only.py` (assumes preprocessing done)
+4. **Check results**: Find outputs in `model_pipeline/outputs/{timestamp}/`
+
+**Note**: You can also run from the `model_pipeline` subdirectory using the same script names.
+
+## Execution Modes
+
+### 1. Full Pipeline (Preprocessing + Training)
+```bash
+# From root alert-fatigue directory
+python run_pipeline.py
+
+# Or from model_pipeline subdirectory
+cd model_pipeline
+python run_pipeline.py
+```
+Runs the complete pipeline from data loading through model training and evaluation.
+
+### 2. Preprocessing Only
+```bash
+# From root alert-fatigue directory
+python run_preprocessing.py
+
+# Or from model_pipeline subdirectory
+cd model_pipeline
+python run_preprocessing.py
+```
+Runs only the preprocessing step with detailed logging about:
+- Data loading and splitting
+- Missing value imputation details
+- Categorical feature processing
+- Data transformation results
+- Profile report generation (optional)
+
+This is useful for:
+- Inspecting your data after preprocessing
+- Debugging data quality issues
+- Understanding feature transformations
+- Validating data splits before training
+
+### 3. Training Only
+```bash
+# From root alert-fatigue directory
+python run_training_only.py
+
+# Or from model_pipeline subdirectory
+cd model_pipeline
+python run_training_only.py
+```
+Runs only the model training step, assuming preprocessing has already been completed.
+This is useful for:
+- Iterating on model parameters
+- Testing different model configurations
+- Faster development cycles
+
+## Example Configuration
+```python
+# Configuration used in all scripts
+csv_path = "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_sample_10pct_binary.csv"
+date_col = "time_prescribing_order"
+target_col = "alert_status_binary"
+features = ["age", "gender", "hospital_days", "charlson_score"]
+```
+
+## Minimal Public APIs (signatures)
 - `split.predictive_time_split(df, date_column, train_frac, eval_frac, test_frac, ascending=True, stratify=False) -> (train_df, eval_df, test_df)`
 - `preprocess.Preprocessor.fit(df, numeric_cols, categorical_cols, impute_numeric=True, scale_numeric=False, rare_category_threshold=0.01) -> None`
 - `preprocess.Preprocessor.transform(df) -> pd.DataFrame`
@@ -130,12 +231,12 @@ TrainingConfig(
 - `evaluation.plots.plot_or_forest(or_df, output_path) -> str`
 - `evaluation.plots.plot_pr_curve(precision, recall, output_path) -> str`
 
-### Extensibility & Simplicity
+## Extensibility & Simplicity
 - Keep modules small and names explicit; minimize abstraction.
 - Future models (CatBoost/XGBoost) can plug into `BaseBinaryClassifier` with the same preprocessing and evaluation.
 - Preprocessing flags allow skipping imputation/scaling for tree-based models.
 
-### Notes for Future Improvements
+## Notes for Future Improvements
 - Robust temporal stratification: experiment with target-conditional time binning to better balance labels without breaking chronology.
 - Calibration curves and Brier score for probability quality.
 - Group-aware splits (e.g., by patient or unit) to avoid leakage.

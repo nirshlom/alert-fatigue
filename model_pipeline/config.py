@@ -42,6 +42,9 @@ class TrainingConfig:
     # Internals or advanced options
     profile_report_filename: str = "train_profile_report.html"
     generate_profile: bool = False
+    
+    # Model options
+    use_glm: bool = True
 
     def validate(self) -> None:
         total = self.train_frac + self.eval_frac + self.test_frac

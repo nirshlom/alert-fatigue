@@ -1,0 +1,79 @@
+{
+  "run_timestamp": "2025-08-13T21:37:45.739608",
+  "run_directory": "model_pipeline/outputs/20250813_213739",
+  "data_info": {
+    "train_samples": 175460,
+    "eval_samples": 37598,
+    "test_samples": 37600,
+    "features": 4
+  },
+  "model_info": {
+    "model_type": "Logistic Regression (Statsmodels)",
+    "use_glm": true,
+    "aic": 62310.64429909927,
+    "bic": -2056347.672146252
+  },
+  "coefficient_summary": {
+    "total_features": 6,
+    "significant_features": 6,
+    "non_significant_features": 0,
+    "significance_breakdown": {
+      "***": 5,
+      "*": 1
+    },
+    "odds_ratio_stats": {
+      "min": 0.99753442390741,
+      "max": 1.1307384754449745,
+      "mean": 1.0295741956080169,
+      "median": 1.0076268839843936
+    },
+    "factor_types": {
+      "protective_factors": 2,
+      "risk_factors": 3
+    },
+    "p_value_stats": {
+      "min": 0.0,
+      "max": 0.047547668986507426,
+      "mean": 0.007955157750493939,
+      "median": 1.0837330490493516e-07
+    }
+  },
+  "evaluation_metrics": {
+    "accuracy": 0.33874142241608596,
+    "precision": 0.041813621757191,
+    "recall": 0.7219215155615697,
+    "specificity": 0.323062015503876,
+    "f1": 0.07904874796266113,
+    "prevalence": 0.039310601627746154,
+    "ppv": 0.041813621757191,
+    "npv": 0.965976821192053,
+    "lr_positive": 1.0664514801882907,
+    "lr_negative": 0.8607588360541694,
+    "auc_roc": 0.5218955440218067,
+    "auc_pr": -0.043586186812650654,
+    "tp": 1067,
+    "fp": 24451,
+    "tn": 11669,
+    "fn": 411
+  },
+  "pr_metrics": {
+    "auc_pr": -0.043586186812650654
+  },
+  "roc_metrics": {
+    "auc_roc": 0.5218955440218067
+  },
+  "optimal_threshold": {
+    "threshold": 0.04095236626204117,
+    "f1_score": 0.07904874692763285
+  },
+  "output_files": {
+    "coefficients": "model_pipeline/outputs/20250813_213739/coefficients_or.csv",
+    "significant_coefficients": "model_pipeline/outputs/20250813_213739/significant_coefficients.csv",
+    "threshold_metrics": "model_pipeline/outputs/20250813_213739/threshold_metrics.csv",
+    "eval_predictions": "model_pipeline/outputs/20250813_213739/eval_predictions.csv",
+    "forest_plot": "model_pipeline/outputs/20250813_213739/coefficients_forest.png",
+    "pr_curve": "model_pipeline/outputs/20250813_213739/pr_curve.png",
+    "roc_curve": "model_pipeline/outputs/20250813_213739/roc_curve.png",
+    "threshold_plot": "model_pipeline/outputs/20250813_213739/threshold_metrics.png"
+  }
+}
