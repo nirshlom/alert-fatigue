@@ -10,7 +10,7 @@ model_pipeline/
 ├── run_pipeline.py          # Full pipeline execution (preprocessing + training)
 ├── run_preprocessing.py     # Preprocessing only execution
 ├── run_training_only.py     # Training only execution
-├── config.py                # Configuration classes and defaults
+├── config.py                # Centralized configuration system
 ├── data_loading.py          # Data loading and validation functions
 ├── split.py                 # Time-based data splitting functions
 ├── preprocess.py            # Data preprocessing and transformation
@@ -110,7 +110,7 @@ model_pipeline/
   - `pr_curve.png`, `threshold_metrics.csv`, `eval_predictions.csv`
 
 ## Module Layout
-- `config.py` – dataclasses/defaults for configuration (paths, columns, seed, split, preprocessing flags).
+- `config.py` – centralized configuration system with validation and defaults.
 - `data_loading.py` – CSV loading, dtype parsing, column validation.
 - `split.py` – predictive time-based split; optional stratified-random split for comparison.
 - `preprocess.py` – `Preprocessor` with optional numeric impute/scale, rare-category handling, schema freeze.
@@ -127,30 +127,66 @@ model_pipeline/
 - `pipeline.py` – `ModelTrainingPipeline` orchestrator.
 - `run_pipeline.py` – Main execution script.
 
-## Configuration (key fields)
+## Centralized Configuration System
+The pipeline uses a **single configuration source** that all scripts automatically import and use. This ensures consistency and makes maintenance easy.
+
+### Configuration Function
 ```python
-TrainingConfig(
-  input_csv_path: str,
-  date_column: str,                 # for predictive split
-  target_column: str,
-  feature_columns: list[str],
-  train_frac: float = 0.7,
-  eval_frac: float = 0.15,
-  test_frac: float = 0.15,
-  ascending: bool = True,
-  stratify: bool = False,           # optional label-aware temporal split
-  random_seed: int = 42,
-  impute_numeric: bool = True,      # OPTIONAL via function inputs
-  scale_numeric: bool = False,      # OPTIONAL via function inputs
-  rare_category_threshold: float = 0.01,
-  output_dir: str = 'model_pipeline/outputs',
-  use_glm: bool = True,
-)
+# In config.py - modify values here to change across all scripts
+def get_config() -> Dict[str, Any]:
+    """Central configuration function - modify values here."""
+    config = {
+        # Input data
+        'input_csv_path': "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv",
+        'date_column': "time_prescribing_order",
+        'target_column': "alert_status_binary",
+        'feature_columns': ["age", "gender", "hospital_days", "charlson_score", "shift_type", "unit_category"],
+        
+        # Data splitting
+        'train_frac': 0.7,
+        'eval_frac': 0.15,
+        'test_frac': 0.15,
+        'ascending': True,
+        'stratify': False,
+        
+        # Reproducibility
+        'random_seed': 42,
+        
+        # Preprocessing options
+        'impute_numeric': True,
+        'scale_numeric': False,
+        'rare_category_threshold': 0.01,
+        
+        # Output settings
+        'output_dir': "model_pipeline/outputs",
+        'generate_profile': True,
+        
+        # Model options
+        'use_glm': True
+    }
+    
+    # Automatic validation happens here
+    # ... validation code ...
+    
+    return config
 ```
+
+### How to Use
+1. **Modify configuration**: Edit values in the `get_config()` function in `config.py`
+2. **All scripts automatically use** the new values
+3. **No need to update** individual run scripts
+4. **Validation happens automatically** when any script runs
+
+### Configuration Parameters
+- **Data**: `input_csv_path`, `date_column`, `target_column`, `feature_columns`
+- **Splitting**: `train_frac`, `eval_frac`, `test_frac`, `ascending`, `stratify`
+- **Preprocessing**: `impute_numeric`, `scale_numeric`, `rare_category_threshold`
+- **Output**: `output_dir`, `generate_profile`
+- **Model**: `use_glm`
 
 ## Quick Start
 1. **Prepare your data**: Ensure you have a CSV with your features and a binary target column
-2. **Update configuration**: Modify the configuration in your chosen script
+2. **Update configuration**: Modify the configuration in `config.py` (single source of truth)
 3. **Choose your execution mode** (run from the root `alert-fatigue` directory):
    - **Full pipeline**: `python run_pipeline.py` (preprocessing + training)
    - **Preprocessing only**: `python run_preprocessing.py` (data preparation + inspection)
@@ -211,11 +247,25 @@ This is useful for:
 
 ## Example Configuration
 ```python
-# Configuration used in all scripts
-csv_path = "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_sample_10pct_binary.csv"
-date_col = "time_prescribing_order"
-target_col = "alert_status_binary"
-features = ["age", "gender", "hospital_days", "charlson_score"]
+# Configuration used in all scripts (from config.py)
+config = {
+    'input_csv_path': "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv",
+    'date_column': "time_prescribing_order",
+    'target_column': "alert_status_binary",
+    'feature_columns': ["age", "gender", "hospital_days", "charlson_score", "shift_type", "unit_category"],
+    'train_frac': 0.7,
+    'eval_frac': 0.15,
+    'test_frac': 0.15,
+    'ascending': True,
+    'stratify': False,
+    'random_seed': 42,
+    'impute_numeric': True,
+    'scale_numeric': False,
+    'rare_category_threshold': 0.01,
+    'output_dir': "model_pipeline/outputs",
+    'generate_profile': True,
+    'use_glm': True
+}
 ```
 
 ## Minimal Public APIs (signatures)
