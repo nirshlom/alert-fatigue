@@ -21,10 +21,11 @@ def main():
     print("=" * 50)
     
     # Define your configuration
-    csv_path = "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_sample_10pct_binary.csv"
+    csv_path = "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv"
     date_col = "time_prescribing_order"
     target_col = "alert_status_binary"
-    features = ["age", "gender", "hospital_days", "charlson_score"]
+    features = ["age", "gender", "hospital_days", "charlson_score", "shift_type", "unit_category"]
+
     
     print(f"Input CSV: {csv_path}")
     print(f"Date Column: {date_col}")

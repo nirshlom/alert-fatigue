@@ -59,11 +59,12 @@ def safe_json_dump(obj, file_path):
         json.dump(converted_obj, f, indent=2, ensure_ascii=False)
 
 
-def run_preprocessing_only(config: TrainingConfig) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict]:
+def run_preprocessing_only(config: TrainingConfig, run_dir: str = None) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict]:
     """Run only the preprocessing pipeline (data loading, splitting, preprocessing).
     
     Args:
         config: Training configuration
+        run_dir: Optional output directory to use (if None, creates new one)
         
     Returns:
         Tuple of (train_df, eval_df, test_df, artifacts)
@@ -154,7 +155,9 @@ def run_preprocessing_only(config: TrainingConfig) -> Tuple[pd.DataFrame, pd.Dat
     artifacts = {}
     if config.generate_profile:
         print("\nGenerating profile report...")
-        run_dir = make_run_dir(config.output_dir)
+        # Use provided run_dir if available, otherwise create new one
+        if run_dir is None:
+            run_dir = make_run_dir(config.output_dir)
         profile_path = os.path.join(run_dir, "train_profile_report.html")
         generate_profile_report(train_processed, profile_path)
         artifacts['profile_path'] = profile_path
@@ -181,7 +184,7 @@ def run_full_training(config: TrainingConfig) -> Dict:
     print(f"Run directory: {run_dir}")
     
     # Run preprocessing
-    train_df, eval_df, test_df, _ = run_preprocessing_only(config)
+    train_df, eval_df, test_df, preprocessing_artifacts = run_preprocessing_only(config, run_dir)
     
     # Train model
     print("Training logistic regression model...")
@@ -338,7 +341,8 @@ def run_full_training(config: TrainingConfig) -> Dict:
             'pr_curve': pr_plot_path,
             'roc_curve': roc_plot_path,
             'threshold_plot': threshold_plot_path
-        }
+        },
+        'profile_report': preprocessing_artifacts.get('profile_path') if config.generate_profile else None
     }
     
     # Save run summary

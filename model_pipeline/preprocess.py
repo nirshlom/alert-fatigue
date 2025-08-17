@@ -80,15 +80,22 @@ class Preprocessor:
             if c not in self.categorical_levels_:
                 # If no levels were recorded (e.g., no categorical cols), skip
                 continue
-            levels = set(self.categorical_levels_[c])
+            levels = list(self.categorical_levels_[c])
+            
+            # Ensure "Other" is in the levels for handling unseen values
+            if "Other" not in levels:
+                levels.append("Other")
+            
+            # Transform the values
             out[c] = (
                 out[c]
                 .astype("string")
                 .fillna("__MISSING__")
-                .apply(lambda v: v if v in levels else "Other")
+                .apply(lambda v: v if v in self.categorical_levels_[c] else "Other")
             )
-            # Cast to category with frozen categories (for stable behavior)
-            out[c] = out[c].astype(pd.CategoricalDtype(categories=list(levels)))
+            
+            # Cast to category with the extended levels (including "Other")
+            out[c] = out[c].astype(pd.CategoricalDtype(categories=levels))
 
         return out
 
