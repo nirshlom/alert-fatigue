@@ -11,7 +11,7 @@ from pathlib import Path
 # Add the parent directory to the path to allow imports
 sys.path.append(str(Path(__file__).parent.parent))
 
-from model_pipeline.config import get_config, TrainingConfig
+from model_pipeline.config import get_config
 from model_pipeline.pipeline import run_full_training
 
 def main():
@@ -21,25 +21,23 @@ def main():
     print("=" * 50)
     
     # Get centralized configuration
-    config_dict = get_config()
+    config = get_config()
     
     # Display configuration
-    print(f"Input CSV: {config_dict['input_csv_path']}")
-    print(f"Date Column: {config_dict['date_column']}")
-    print(f"Target Column: {config_dict['target_column']}")
-    print(f"Features: {config_dict['feature_columns']}")
+    print(f"Input CSV: {config['input_csv_path']}")
+    print(f"Date Column: {config['date_column']}")
+    print(f"Target Column: {config['target_column']}")
+    print(f"Features: {config['feature_columns']}")
     print()
     
     # Check if input file exists
-    if not os.path.exists(config_dict['input_csv_path']):
-        print(f"ERROR: Input file not found: {config_dict['input_csv_path']}")
+    if not os.path.exists(config['input_csv_path']):
+        print(f"ERROR: Input file not found: {config['input_csv_path']}")
         print("Please check the file path and ensure the file exists.")
         return
     
-    # Create configuration object from centralized config
     # Override generate_profile for faster training iterations
-    config_dict['generate_profile'] = False
-    config = TrainingConfig(**config_dict)
+    config['generate_profile'] = False
     
     print("\nStarting training pipeline...")
     print("-" * 30)

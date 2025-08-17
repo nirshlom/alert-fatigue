@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass
+from typing import Dict, Any
 
 
 def get_config() -> Dict[str, Any]:
@@ -143,34 +142,3 @@ def get_config() -> Dict[str, Any]:
     print(f"  - Output: {config['output_dir']}")
     
     return config
-
-
-@dataclass
-class TrainingConfig:
-    """Configuration for preprocessing and training (legacy support)."""
-    
-    input_csv_path: str
-    date_column: str
-    target_column: str
-    feature_columns: List[str]
-    train_frac: float = 0.7
-    eval_frac: float = 0.15
-    test_frac: float = 0.15
-    ascending: bool = True
-    stratify: bool = False
-    random_seed: int = 42
-    impute_numeric: bool = True
-    scale_numeric: bool = False
-    rare_category_threshold: float = 0.01
-    numeric_columns: Optional[List[str]] = None
-    categorical_columns: Optional[List[str]] = None
-    output_dir: str = "model_pipeline/outputs"
-    profile_report_filename: str = "train_profile_report.html"
-    generate_profile: bool = False
-    use_glm: bool = True
-
-    def validate(self) -> None:
-        """Legacy validation method - now calls the centralized validation."""
-        get_config()  # This will validate all parameters
-
-

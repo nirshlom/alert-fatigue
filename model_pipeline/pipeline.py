@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any
 
 import numpy as np
 import pandas as pd
 
-from .config import TrainingConfig
 from .data_loading import load_csv, select_columns
 from .evaluation.metrics import (
     compute_pr_metrics, compute_roc_metrics, compute_summary_metrics,
@@ -59,11 +58,11 @@ def safe_json_dump(obj, file_path):
         json.dump(converted_obj, f, indent=2, ensure_ascii=False)
 
 
-def run_preprocessing_only(config: TrainingConfig, run_dir: str = None) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict]:
+def run_preprocessing_only(config: Dict[str, Any], run_dir: str = None) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict]:
     """Run only the preprocessing pipeline (data loading, splitting, preprocessing).
     
     Args:
-        config: Training configuration
+        config: Training configuration dictionary
         run_dir: Optional output directory to use (if None, creates new one)
         
     Returns:
@@ -73,35 +72,35 @@ def run_preprocessing_only(config: TrainingConfig, run_dir: str = None) -> Tuple
     
     # Load data
     print("Loading data...")
-    df = load_csv(config.input_csv_path)
-    df = select_columns(df, config.feature_columns + [config.target_column, config.date_column])
+    df = load_csv(config['input_csv_path'])
+    df = select_columns(df, config['feature_columns'] + [config['target_column'], config['date_column']])
     print(f"✓ Data loaded: {df.shape[0]:,} rows, {df.shape[1]} columns")
     
     # Split data
     print("\nSplitting data...")
     train_df, eval_df, test_df = predictive_time_split(
-        df, config.date_column, config.train_frac, config.eval_frac, config.test_frac,
-        ascending=config.ascending, stratify=config.stratify, target_column=config.target_column
+        df, config['date_column'], config['train_frac'], config['eval_frac'], config['test_frac'],
+        ascending=config['ascending'], stratify=config['stratify'], target_column=config['target_column']
     )
     print(f"✓ Data split: Train={len(train_df):,}, Eval={len(eval_df):,}, Test={len(test_df):,}")
     
     # Preprocess data
     print("\nPreprocessing data...")
     preprocessor = Preprocessor(
-        impute_numeric=config.impute_numeric,
-        scale_numeric=config.scale_numeric,
-        rare_category_threshold=config.rare_category_threshold
+        impute_numeric=config['impute_numeric'],
+        scale_numeric=config['scale_numeric'],
+        rare_category_threshold=config['rare_category_threshold']
     )
     
     # Log preprocessing configuration
     print(f"  Preprocessing configuration:")
-    print(f"    - Impute numeric: {config.impute_numeric}")
-    print(f"    - Scale numeric: {config.scale_numeric}")
-    print(f"    - Rare category threshold: {config.rare_category_threshold}")
+    print(f"    - Impute numeric: {config['impute_numeric']}")
+    print(f"    - Scale numeric: {config['scale_numeric']}")
+    print(f"    - Rare category threshold: {config['rare_category_threshold']}")
     
     # Fit preprocessor on training data
-    train_features = train_df[config.feature_columns]
-    train_target = train_df[config.target_column]
+    train_features = train_df[config['feature_columns']]
+    train_target = train_df[config['target_column']]
     
     print(f"  Fitting preprocessor on training data...")
     preprocessor.fit(train_features)
@@ -111,7 +110,7 @@ def run_preprocessing_only(config: TrainingConfig, run_dir: str = None) -> Tuple
     print(f"    - Numeric columns: {len(preprocessor.numeric_columns)}")
     print(f"    - Categorical columns: {len(preprocessor.categorical_columns)}")
     
-    if config.impute_numeric and preprocessor.numeric_columns:
+    if config['impute_numeric'] and preprocessor.numeric_columns:
         print(f"    - Numeric imputation applied to: {', '.join(preprocessor.numeric_columns)}")
         # Count missing values before imputation
         missing_before = train_features[preprocessor.numeric_columns].isnull().sum()
@@ -124,7 +123,7 @@ def run_preprocessing_only(config: TrainingConfig, run_dir: str = None) -> Tuple
         else:
             print(f"    - No missing values found in numeric columns")
     
-    if config.scale_numeric and preprocessor.numeric_columns:
+    if config['scale_numeric'] and preprocessor.numeric_columns:
         print(f"    - Numeric scaling applied to: {', '.join(preprocessor.numeric_columns)}")
     
     if preprocessor.categorical_columns:
@@ -137,13 +136,13 @@ def run_preprocessing_only(config: TrainingConfig, run_dir: str = None) -> Tuple
     # Transform all splits
     print(f"  Transforming data...")
     train_processed = preprocessor.transform(train_features)
-    eval_processed = preprocessor.transform(eval_df[config.feature_columns])
-    test_processed = preprocessor.transform(test_df[config.feature_columns])
+    eval_processed = preprocessor.transform(eval_df[config['feature_columns']])
+    test_processed = preprocessor.transform(test_df[config['feature_columns']])
     
     # Add target columns back
-    train_processed[config.target_column] = train_target
-    eval_processed[config.target_column] = eval_df[config.target_column]
-    test_processed[config.target_column] = test_df[config.target_column]
+    train_processed[config['target_column']] = train_target
+    eval_processed[config['target_column']] = eval_df[config['target_column']]
+    test_processed[config['target_column']] = test_df[config['target_column']]
     
     # Log final shapes
     print(f"  Final processed shapes:")
@@ -153,11 +152,11 @@ def run_preprocessing_only(config: TrainingConfig, run_dir: str = None) -> Tuple
     
     # Generate profile report if requested
     artifacts = {}
-    if config.generate_profile:
+    if config['generate_profile']:
         print("\nGenerating profile report...")
         # Use provided run_dir if available, otherwise create new one
         if run_dir is None:
-            run_dir = make_run_dir(config.output_dir)
+            run_dir = make_run_dir(config['output_dir'])
         profile_path = os.path.join(run_dir, "train_profile_report.html")
         generate_profile_report(train_processed, profile_path)
         artifacts['profile_path'] = profile_path
@@ -168,11 +167,11 @@ def run_preprocessing_only(config: TrainingConfig, run_dir: str = None) -> Tuple
     return train_processed, eval_processed, test_processed, artifacts
 
 
-def run_full_training(config: TrainingConfig) -> Dict:
+def run_full_training(config: Dict[str, Any]) -> Dict:
     """Run the complete model training pipeline.
     
     Args:
-        config: Training configuration
+        config: Training configuration dictionary
         
     Returns:
         Dictionary with all results and artifacts
@@ -180,7 +179,7 @@ def run_full_training(config: TrainingConfig) -> Dict:
     print("Running full model training pipeline...")
     
     # Create run directory
-    run_dir = make_run_dir(config.output_dir)
+    run_dir = make_run_dir(config['output_dir'])
     print(f"Run directory: {run_dir}")
     
     # Run preprocessing
@@ -188,10 +187,10 @@ def run_full_training(config: TrainingConfig) -> Dict:
     
     # Train model
     print("Training logistic regression model...")
-    model = StatsmodelsLogitModel(use_glm=config.use_glm)
+    model = StatsmodelsLogitModel(use_glm=config['use_glm'])
     
-    train_features = train_df[config.feature_columns]
-    train_target = train_df[config.target_column]
+    train_features = train_df[config['feature_columns']]
+    train_target = train_df[config['target_column']]
     
     model.fit(train_features, train_target)
     
@@ -215,8 +214,8 @@ def run_full_training(config: TrainingConfig) -> Dict:
     
     # Make predictions
     print("Making predictions...")
-    eval_features = eval_df[config.feature_columns]
-    eval_target = eval_df[config.target_column]
+    eval_features = eval_df[config['feature_columns']]
+    eval_target = eval_df[config['target_column']]
     
     eval_proba = model.predict_proba(eval_features)
     eval_scores = eval_proba[:, 1]  # Probability of positive class
@@ -287,22 +286,7 @@ def run_full_training(config: TrainingConfig) -> Dict:
     
     # Save configuration
     config_path = os.path.join(run_dir, "config_used.json")
-    config_dict = {
-        'input_csv_path': config.input_csv_path,
-        'date_column': config.date_column,
-        'target_column': config.target_column,
-        'feature_columns': config.feature_columns,
-        'train_frac': config.train_frac,
-        'eval_frac': config.eval_frac,
-        'test_frac': config.test_frac,
-        'ascending': config.ascending,
-        'stratify': config.stratify,
-        'impute_numeric': config.impute_numeric,
-        'scale_numeric': config.scale_numeric,
-        'rare_category_threshold': config.rare_category_threshold,
-        'use_glm': config.use_glm
-            }
-    safe_json_dump(config_dict, config_path)
+    safe_json_dump(config, config_path)
     
     # Create run summary
     run_summary = {
@@ -312,11 +296,11 @@ def run_full_training(config: TrainingConfig) -> Dict:
             'train_samples': len(train_df),
             'eval_samples': len(eval_df),
             'test_samples': len(test_df),
-            'features': len(config.feature_columns)
+            'features': len(config['feature_columns'])
         },
         'model_info': {
             'model_type': 'Logistic Regression (Statsmodels)',
-            'use_glm': config.use_glm,
+            'use_glm': config['use_glm'],
             'aic': aic_bic['aic'],
             'bic': aic_bic['bic']
         },
@@ -342,7 +326,7 @@ def run_full_training(config: TrainingConfig) -> Dict:
             'roc_curve': roc_plot_path,
             'threshold_plot': threshold_plot_path
         },
-        'profile_report': preprocessing_artifacts.get('profile_path') if config.generate_profile else None
+        'profile_report': preprocessing_artifacts.get('profile_path') if config['generate_profile'] else None
     }
     
     # Save run summary

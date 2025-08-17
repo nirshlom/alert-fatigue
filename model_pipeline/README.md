@@ -176,6 +176,7 @@ def get_config() -> Dict[str, Any]:
 2. **All scripts automatically use** the new values
 3. **No need to update** individual run scripts
 4. **Validation happens automatically** when any script runs
+5. **Truly centralized** - one place to modify everything
 
 ### Configuration Parameters
 - **Data**: `input_csv_path`, `date_column`, `target_column`, `feature_columns`
@@ -194,6 +195,35 @@ def get_config() -> Dict[str, Any]:
 4. **Check results**: Find outputs in `model_pipeline/outputs/{timestamp}/`
 
 **Note**: You can also run from the `model_pipeline` subdirectory using the same script names.
+
+## Avoiding Python Caching Issues
+If you modify configuration values in `config.py` but don't see the changes reflected when running scripts, you may be experiencing Python caching issues. Here are solutions:
+
+### Option 1: Use the -B flag (Recommended)
+```bash
+# This prevents Python from creating .pyc cache files
+python -B run_pipeline.py
+python -B run_preprocessing.py
+python -B run_training_only.py
+```
+
+### Option 2: Clear Python cache manually
+```bash
+# Remove all Python cache files
+rm -rf __pycache__/
+rm -rf */__pycache__/
+rm -rf ./*.pyc
+```
+
+### Option 3: Force module reload
+```bash
+# Reload the config module before running
+python -c "import importlib; import config; importlib.reload(config)" && python run_pipeline.py
+```
+
+**Why this happens**: Python caches compiled bytecode (`.pyc` files) to improve performance. When you modify source files, these cached files may not be updated immediately, causing scripts to use old values.
+
+**Best practice**: Always use the `-B` flag when developing or testing configuration changes to ensure you're running the latest version of your code.
 
 ## Execution Modes
 
@@ -255,7 +285,7 @@ config = {
     'feature_columns': ["age", "gender", "hospital_days", "charlson_score", "shift_type", "unit_category"],
     'train_frac': 0.7,
     'eval_frac': 0.15,
-    'test_frac': 0.15,
+    'test_frac': 0.25,
     'ascending': True,
     'stratify': False,
     'random_seed': 42,
