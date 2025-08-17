@@ -11,60 +11,34 @@ from pathlib import Path
 # Add the parent directory to the path to allow imports
 sys.path.append(str(Path(__file__).parent.parent))
 
-from model_pipeline.config import TrainingConfig
+from model_pipeline.config import get_config, TrainingConfig
 from model_pipeline.pipeline import run_full_training, run_preprocessing_only
 
 
 def main():
     """Main function to run the pipeline with the specified configuration."""
     
-    # Define your configuration
-    csv_path = "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv"
-    date_col = "time_prescribing_order"
-    target_col = "alert_status_binary"
-    features = ["age", "gender", "hospital_days", "charlson_score", "shift_type", "unit_category"]
-    
     print("Alert Fatigue Analysis Pipeline")
     print("=" * 50)
-    print(f"Input CSV: {csv_path}")
-    print(f"Date Column: {date_col}")
-    print(f"Target Column: {target_col}")
-    print(f"Features: {features}")
+    
+    # Get centralized configuration
+    config_dict = get_config()
+    
+    # Display configuration
+    print(f"Input CSV: {config_dict['input_csv_path']}")
+    print(f"Date Column: {config_dict['date_column']}")
+    print(f"Target Column: {config_dict['target_column']}")
+    print(f"Features: {config_dict['feature_columns']}")
     print()
     
     # Check if input file exists
-    if not os.path.exists(csv_path):
-        print(f"ERROR: Input file not found: {csv_path}")
+    if not os.path.exists(config_dict['input_csv_path']):
+        print(f"ERROR: Input file not found: {config_dict['input_csv_path']}")
         print("Please check the file path and ensure the file exists.")
         return
     
-    # Create configuration
-    config = TrainingConfig(
-        input_csv_path=csv_path,
-        date_column=date_col,
-        target_column=target_col,
-        feature_columns=features,
-        train_frac=0.7,
-        eval_frac=0.15,
-        test_frac=0.15,
-        ascending=True,
-        stratify=False,
-        random_seed=42,
-        impute_numeric=True,
-        scale_numeric=False,
-        rare_category_threshold=0.01,
-        output_dir="model_pipeline/outputs",
-        generate_profile=True,
-        use_glm=True
-    )
-    
-    # Validate configuration
-    try:
-        config.validate()
-        print("Configuration validated successfully!")
-    except ValueError as e:
-        print(f"Configuration error: {e}")
-        return
+    # Create configuration object from centralized config
+    config = TrainingConfig(**config_dict)
     
     print("\nStarting pipeline execution...")
     print("-" * 30)
