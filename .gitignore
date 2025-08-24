@@ -1,16 +1,27 @@
-# Python
+# Ignore everything
+*
+
+# But not these files...
+!.gitignore
+!*.py
+
+# And not these directories...
+!*/
+
+# But still ignore these even if they are .py files or directories
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 .env
-.venv
+.venv/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+hiba_env/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -30,13 +41,3 @@ venv.bak/
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-# Project specific
-*.csv
-*.xlsx
-*.xls
-*.html
-*.xhtml
-
-# Optional: Ignore temporary or backup Excel files
-~$*.xls*
