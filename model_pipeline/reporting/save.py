@@ -6,13 +6,22 @@ from datetime import datetime
 from typing import Any, Dict
 
 
+def normalize_path(path: str) -> str:
+    """Normalize path for cross-platform compatibility."""
+    return os.path.normpath(path)
+
+
 def ensure_dir(path: str) -> None:
-    os.makedirs(path, exist_ok=True)
+    """Ensure directory exists, creating it if necessary."""
+    normalized_path = os.path.normpath(path)
+    os.makedirs(normalized_path, exist_ok=True)
 
 
 def make_run_dir(base_output_dir: str) -> str:
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_dir = os.path.join(base_output_dir, ts)
+    # Ensure cross-platform path handling
+    normalized_base = normalize_path(base_output_dir)
+    run_dir = os.path.join(normalized_base, ts)
     ensure_dir(run_dir)
     return run_dir
 

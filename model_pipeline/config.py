@@ -23,7 +23,7 @@ def get_config() -> Dict[str, Any]:
     # ============================================================================
     config = {
         # Input data
-        'input_csv_path': "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv",
+        'input_csv_path': "alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv",
         'date_column': "time_prescribing_order",
         'target_column': "alert_status_binary",
         'feature_columns': ["age", "gender", "hospital_days", "charlson_score", "shift_type", "unit_category"],
@@ -44,7 +44,7 @@ def get_config() -> Dict[str, Any]:
         'rare_category_threshold': 0.01,
         
         # Output settings
-        'output_dir': "model_pipeline/outputs",
+        'output_dir': os.path.normpath("model_pipeline/outputs"),
         'generate_profile': True,
         
         # Model options
