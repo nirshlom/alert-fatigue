@@ -1,4 +1,5 @@
 import warnings
+import re
 from typing import List, Optional
 
 import numpy as np
@@ -126,6 +127,21 @@ class StatsmodelsLogitModel(BaseBinaryClassifier):
         except Exception as e:
             raise ValueError(f"Error in prediction: {e}. Formula: {self.formula}")
     
+    def _clean_term_name(self, term: str) -> str:
+        """Return a concise, readable term name.
+        
+        Examples:
+            "C(unit_category_ud, levels=['A','B'])[T.B]" -> "unit_category_ud_B"
+            "Intercept" -> "Intercept"
+        """
+        # Regex to capture feature and category for patsy-coded categoricals
+        match = re.match(r"C\(([^,]+),[^\)]*\)\[T\.([^\]]+)\]", term)
+        if match:
+            feature_name = match.group(1)
+            category_name = match.group(2)
+            return f"{feature_name}_{category_name}"
+        return term
+
     def get_coefficients(self) -> pd.DataFrame:
         """Get model coefficients and statistics.
         
@@ -141,8 +157,11 @@ class StatsmodelsLogitModel(BaseBinaryClassifier):
         pvalues = self.result.pvalues
         
         # Create coefficient DataFrame
+        raw_features = list(params.index)
+        clean_features = [self._clean_term_name(t) for t in raw_features]
+        
         coef_df = pd.DataFrame({
-            'feature': params.index,
+            'feature': clean_features,
             'coefficient': params.values,
             'std_error': self.result.bse.values,
             'p_value': pvalues.values,
@@ -180,15 +199,55 @@ class StatsmodelsLogitModel(BaseBinaryClassifier):
             return "ns"
     
     def get_model_summary(self) -> str:
-        """Get model summary as string.
+        """Return a tidy, readable summary with cleaned term names.
         
-        Returns:
-            Model summary string
+        Builds a compact table from model results instead of relying on
+        statsmodels' ASCII formatting, which embeds verbose patsy terms.
         """
         if not self.is_fitted:
             raise ValueError("Model must be fitted before getting summary")
         
-        return str(self.result.summary())
+        # Gather core statistics
+        params = self.result.params
+        bse = self.result.bse
+        pvalues = self.result.pvalues
+        conf_int = self.result.conf_int()
+        
+        terms = list(params.index)
+        clean_terms = [self._clean_term_name(t) for t in terms]
+        
+        # Compute z-values if available inputs exist
+        with np.errstate(divide='ignore', invalid='ignore'):
+            z_values = params.values / bse.values
+        
+        # Build a DataFrame for pretty printing
+        summary_df = pd.DataFrame({
+            'term': clean_terms,
+            'coef': params.values,
+            'std err': bse.values,
+            'z': z_values,
+            'P>|z|': pvalues.values,
+            '[0.025': conf_int.iloc[:, 0].values,
+            '0.975]': conf_int.iloc[:, 1].values,
+        })
+        
+        # Formatting
+        formatted = summary_df.copy()
+        float_cols = ['coef', 'std err', 'z', 'P>|z|', '[0.025', '0.975]']
+        for col in float_cols:
+            formatted[col] = pd.to_numeric(formatted[col], errors='coerce')
+        
+        # Create header similar to statsmodels but compact
+        header_lines = [
+            "Cleaned Generalized Linear Model Regression Results",
+            "=" * 79,
+        ]
+        
+        # Convert to fixed-width table
+        table = formatted.to_string(index=False, justify='left',
+                                    float_format=lambda x: f"{x:,.4f}")
+        
+        return "\n".join(header_lines + [table])
     
     def get_aic_bic(self) -> dict:
         """Get AIC and BIC values.

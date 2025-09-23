@@ -23,11 +23,12 @@ def get_config() -> Dict[str, Any]:
     # ============================================================================
     config = {
         # Input data
-        'input_csv_path': "alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv",
+        'input_csv_path': "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv",
         'date_column': "time_prescribing_order",
         'target_column': "alert_status_binary",
-        'feature_columns': ["age", "gender", "hospital_days", "charlson_score",
-         "shift_type", "unit_category", "drug_atc"],
+        # 'feature_columns': ["age", "gender", "hospital_days", "charlson_score",
+        #  "shift_type", "unit_category", "drug_atc"],
+         'feature_columns': ['unit_category_ud'],
         
         # Data splitting
         'train_frac': 0.7,

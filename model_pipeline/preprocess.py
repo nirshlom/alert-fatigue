@@ -24,6 +24,8 @@ class Preprocessor:
     numeric_means_: Dict[str, float] = field(default_factory=dict)
     numeric_stds_: Dict[str, float] = field(default_factory=dict)
     categorical_levels_: Dict[str, List[str]] = field(default_factory=dict)
+    # Track if missing values were seen in training for each categorical column
+    categorical_missing_seen_: Dict[str, bool] = field(default_factory=dict)
 
     def _infer_column_types(self, df: pd.DataFrame) -> Tuple[List[str], List[str]]:
         if self.numeric_columns is not None and self.categorical_columns is not None:
@@ -48,13 +50,26 @@ class Preprocessor:
 
         # Categorical: determine frequent levels and freeze
         self.categorical_levels_ = {}
+        self.categorical_missing_seen_ = {}
         if categorical_cols:
             n = len(df)
             for c in categorical_cols:
-                value_counts = df[c].astype("string").fillna("__MISSING__").value_counts(dropna=False)
+                series = df[c].astype("string")
+                missing_seen = series.isna().any()
+                self.categorical_missing_seen_[c] = bool(missing_seen)
+
+                # Count without injecting a '__MISSING__' level unless actually present
+                if missing_seen:
+                    value_counts = series.fillna("__MISSING__").value_counts(dropna=False)
+                else:
+                    value_counts = series.value_counts(dropna=False)
+
                 keep_levels = value_counts[value_counts / n >= self.rare_category_threshold].index.tolist()
-                if "__MISSING__" not in keep_levels:
+
+                # Ensure '__MISSING__' is kept only if it truly exists in training
+                if missing_seen and "__MISSING__" not in keep_levels:
                     keep_levels.append("__MISSING__")
+
                 self.categorical_levels_[c] = keep_levels
 
         # Persist the decision about which columns are considered numeric/categorical
@@ -87,12 +102,15 @@ class Preprocessor:
                 levels.append("Other")
             
             # Transform the values
-            out[c] = (
-                out[c]
-                .astype("string")
-                .fillna("__MISSING__")
-                .apply(lambda v: v if v in self.categorical_levels_[c] else "Other")
+            col_series = out[c].astype("string")
+            if self.categorical_missing_seen_.get(c, False):
+                # Training had missing: preserve '__MISSING__' category for nulls
+                col_series = col_series.fillna("__MISSING__")
+            # If training had no missing, do NOT create '__MISSING__'; nulls map to 'Other'
+            col_series = col_series.apply(
+                lambda v: v if v in self.categorical_levels_[c] else ("__MISSING__" if (v == "__MISSING__" and "__MISSING__" in self.categorical_levels_[c]) else "Other")
             )
+            out[c] = col_series
             
             # Cast to category with the extended levels (including "Other")
             out[c] = out[c].astype(pd.CategoricalDtype(categories=levels))
