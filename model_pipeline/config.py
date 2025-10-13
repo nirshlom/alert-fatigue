@@ -28,7 +28,15 @@ def get_config() -> Dict[str, Any]:
         'target_column': "alert_status_binary",
         # 'feature_columns': ["age", "gender", "hospital_days", "charlson_score",
         #  "shift_type", "unit_category", "drug_atc"],
-         'feature_columns': ['unit_category_ud'],
+         
+         
+         # new feature columns
+        'feature_columns': ["age", "gender", "hospital_days", "charlson_score", "shift_type", "unit_category_ud",
+        "hospital_category", "chronic_med_ud", "atc_group_ud", "prescription_day", "kidney_disease", "hepatic_disease", "diabetes_disease", "ischemic_heart_disease", 
+        "copd_disease", "cerebrovascular_disease", "peptic_ulcer_disease", "dementia_disease",
+        "oncological_disease", "hemato_oncological_disease",
+        "hypertension_disease", "atrial_fibrillation_disease", "hyperlipidemia_disease",
+         "congestive_heart_failure_disease", "obesity_disease"],
         
         # Data splitting
         'train_frac': 0.7,
