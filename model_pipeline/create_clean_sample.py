@@ -55,7 +55,7 @@ df['hospital_category'] = np.select(
         df['hospital_code'].isin([23, 26, 28]),
         df['hospital_code'].isin([20, 24])
     ],
-    ['Small hospitals', 'Medium hospitals', 'Large hospitals'],
+    ['Small hospital', 'Medium hospital', 'Large hospital'],
     default='Other'
 )
 #frequency table of hospital_category
@@ -130,7 +130,7 @@ df['atrial_fibrillation_disease'] = np.where(
 
 df['hyperlipidemia_disease'] = np.where(
     df['hospital_diagnosis'].str.contains(
-        'HYPERLIPIDEMIA|DYSLIPIDEMIA', case=False, na=False),
+        'HYPERLIPIDEMIA|DYSLIPIDEMIA|HYPERCHOLESTEROL', case=False, na=False),
     1,
     0
 )
@@ -153,11 +153,20 @@ df['obesity_disease'] = np.where(
 )
 
 
+# 1️⃣ Count number of orders per shift per ID2 - not used for now to measure doctor_workload ( לא  מתחשב בתאריך ההוראה)
+#df['doctor_workload'] = df.groupby(['id2', 'shift_type'])['order_id'].transform('count')
+
+
 # Clean and sample
 df = df[df['gender'] != 'gender']  # Remove header contamination
 df['alert_status_binary'] = (df['alert_status'] == 'Stoping_alert').astype(int)
-df_sample = df.sample(n=int(len(df) * 0.1), random_state=42)
+df_sample = df.sample(n=int(len(df) * 1.0), random_state=42)
+#df_sample = df.sample(n=int(len(df) * 0.10), random_state=42)
 
-# Save
+# Save 10% sample
 df_sample.to_csv("C:/Users/hibaa/Documents/GitHub/alert-fatigue/alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv", index=False)
+print(f"Saved {len(df_sample):,} rows")
+
+# Save 100% sample
+df_sample.to_csv("C:/Users/hibaa/Documents/GitHub/alert-fatigue/alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_100pct.csv", index=False)
 print(f"Saved {len(df_sample):,} rows")
