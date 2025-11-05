@@ -161,6 +161,7 @@ df['obesity_disease'] = np.where(
 # Clean and sample
 df = df[df['gender'] != 'gender']  # Remove header contamination
 df['alert_status_binary'] = (df['alert_status'] == 'Stoping_alert').astype(int)
+df['alert_type_binary'] = (df['alert_type'] == 'Error_Alert').astype(int)
 df_sample = df.sample(n=int(len(df) * 1.0), random_state=42)
 #df_sample = df.sample(n=int(len(df) * 0.10), random_state=42)
 
