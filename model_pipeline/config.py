@@ -31,12 +31,11 @@ def get_config() -> Dict[str, Any]:
          
          
          # new feature columns
-        'feature_columns': ["age", "gender", "hospital_days", "charlson_score", "shift_type", "unit_category_ud",
-        "hospital_category", "chronic_med_ud", "atc_group_ud", "prescription_day", "kidney_disease", "hepatic_disease", "diabetes_disease", "ischemic_heart_disease", 
-        "copd_disease", "cerebrovascular_disease", "peptic_ulcer_disease", "dementia_disease",
-        "oncological_disease", "hemato_oncological_disease",
-        "hypertension_disease", "atrial_fibrillation_disease", "hyperlipidemia_disease",
-         "congestive_heart_failure_disease", "obesity_disease"],
+        'feature_columns': ["gender", "unit_category_ud"],
+
+        # Optional: specify reference category per categorical feature
+        # Example: {'gender': 'F', 'unit_category_ud': 'ICU'}
+        'categorical_reference_levels': {'gender': 'FEMALE', 'unit_category_ud': 'Geriatric'},
         
         # Data splitting
         'train_frac': 0.7,
@@ -121,6 +120,18 @@ def get_config() -> Dict[str, Any]:
     for field in string_fields:
         if not isinstance(config[field], str) or not config[field].strip():
             raise ValueError(f"{field} must be a non-empty string, got {config[field]}")
+
+    # Validate categorical_reference_levels (optional dict[str, str])
+    if 'categorical_reference_levels' not in config or config['categorical_reference_levels'] is None:
+        config['categorical_reference_levels'] = {}
+    if not isinstance(config['categorical_reference_levels'], dict):
+        raise ValueError("categorical_reference_levels must be a dict mapping feature -> reference category")
+    # Keys must be features; values must be non-empty strings
+    for feat, ref in config['categorical_reference_levels'].items():
+        if feat not in config['feature_columns']:
+            raise ValueError(f"categorical_reference_levels contains unknown feature '{feat}' not in feature_columns")
+        if not isinstance(ref, str) or not ref:
+            raise ValueError(f"Reference for feature '{feat}' must be a non-empty string; got {ref}")
     
     # ============================================================================
     # ADVANCED VALIDATION
@@ -150,5 +161,7 @@ def get_config() -> Dict[str, Any]:
     print(f"  - Features: {len(config['feature_columns'])} columns")
     print(f"  - Data split: {config['train_frac']:.0%} train, {config['eval_frac']:.0%} eval, {config['test_frac']:.0%} test")
     print(f"  - Output: {config['output_dir']}")
+    if config['categorical_reference_levels']:
+        print(f"  - Categorical references: {len(config['categorical_reference_levels'])} specified")
     
     return config

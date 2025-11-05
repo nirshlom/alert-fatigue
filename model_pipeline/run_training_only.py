@@ -61,8 +61,26 @@ def main():
         
         if 'optimal_threshold' in results:
             opt = results['optimal_threshold']
-            print(f"  - Optimal Threshold: {opt.get('threshold', 'N/A'):.3f}")
-            print(f"  - Optimal F1: {opt.get('f1_score', 'N/A'):.3f}")
+            # Handle both float and dict return types; try to also read from run_summary if needed
+            threshold_val = None
+            f1_val = None
+            try:
+                if isinstance(opt, dict):
+                    threshold_val = opt.get('threshold')
+                    f1_val = opt.get('f1_score')
+                else:
+                    threshold_val = float(opt)
+                # Fallback: try run_summary for f1
+                if f1_val is None and 'run_summary' in results:
+                    rs_opt = results['run_summary'].get('optimal_threshold', {})
+                    if isinstance(rs_opt, dict):
+                        f1_val = rs_opt.get('f1_score')
+            except Exception:
+                pass
+            if threshold_val is not None:
+                print(f"  - Optimal Threshold: {threshold_val:.3f}")
+            if f1_val is not None:
+                print(f"  - Optimal F1: {f1_val:.3f}")
         
         print(f"\nOutput files created:")
         if 'output_files' in results.get('run_summary', {}):

@@ -81,6 +81,7 @@ model_pipeline/
   - Cast to `category`.
   - Freeze category levels from Train; unseen categories in Eval/Test map to "Other".
   - Pass frozen levels to patsy via `C(col, levels=[...])` to stabilize encoding across splits.
+  - Optional: set a reference category per feature via `categorical_reference_levels` in `config.py`. If the requested reference is not among frozen levels (e.g., dropped as rare), the default reference is used and a warning is emitted.
 
 ## Modeling (Statsmodels Logistic Regression)
 - Wrapper builds a patsy formula from `feature_columns` and `target_column`:
@@ -162,7 +163,11 @@ def get_config() -> Dict[str, Any]:
         'generate_profile': True,
         
         # Model options
-        'use_glm': True
+        'use_glm': True,
+
+        # Optional categorical reference categories per feature
+        # Example: {'gender': 'F', 'unit_category_ud': 'ICU'}
+        'categorical_reference_levels': {}
     }
     
     # Automatic validation happens here
@@ -182,6 +187,7 @@ def get_config() -> Dict[str, Any]:
 - **Data**: `input_csv_path`, `date_column`, `target_column`, `feature_columns`
 - **Splitting**: `train_frac`, `eval_frac`, `test_frac`, `ascending`, `stratify`
 - **Preprocessing**: `impute_numeric`, `scale_numeric`, `rare_category_threshold`
+  - Optional: `categorical_reference_levels` – mapping feature -> desired reference category
 - **Output**: `output_dir`, `generate_profile`
 - **Model**: `use_glm`
 
@@ -294,7 +300,11 @@ config = {
     'rare_category_threshold': 0.01,
     'output_dir': "model_pipeline/outputs",
     'generate_profile': True,
-    'use_glm': True
+    'use_glm': True,
+    'categorical_reference_levels': {
+        'gender': 'F',
+        'unit_category_ud': 'ICU'
+    }
 }
 ```
 

@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import warnings
 
 
 @dataclass
@@ -17,7 +18,9 @@ class Preprocessor:
     categorical_columns: Optional[List[str]] = None
     impute_numeric: bool = True
     scale_numeric: bool = False
-    rare_category_threshold: float = 0.01
+    rare_category_threshold: float = 0.01 # 
+    # Optional mapping: feature name -> desired reference category name
+    categorical_reference_levels: Optional[Dict[str, str]] = None
 
     # Fitted attributes
     numeric_medians_: Dict[str, float] = field(default_factory=dict)
@@ -112,6 +115,19 @@ class Preprocessor:
             )
             out[c] = col_series
             
+            # Reorder categories to put configured reference first, if provided and valid
+            if self.categorical_reference_levels and c in self.categorical_reference_levels:
+                desired_ref = self.categorical_reference_levels[c]
+                if desired_ref in levels:
+                    # Move desired_ref to the front while preserving order of others
+                    levels = [desired_ref] + [lvl for lvl in levels if lvl != desired_ref]
+                else:
+                    warnings.warn(
+                        f"Requested reference '{desired_ref}' for feature '{c}' is not in frozen levels. "
+                        f"Valid levels: {levels}. Using default reference '{levels[0]}'."
+                    )
+                # If not present in levels, silently keep default order (warnings added in a later step)
+
             # Cast to category with the extended levels (including "Other")
             out[c] = out[c].astype(pd.CategoricalDtype(categories=levels))
 
