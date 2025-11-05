@@ -89,7 +89,8 @@ def run_preprocessing_only(config: Dict[str, Any], run_dir: str = None) -> Tuple
     preprocessor = Preprocessor(
         impute_numeric=config['impute_numeric'],
         scale_numeric=config['scale_numeric'],
-        rare_category_threshold=config['rare_category_threshold']
+        rare_category_threshold=config['rare_category_threshold'],
+        categorical_reference_levels=config.get('categorical_reference_levels')
     )
     
     # Log preprocessing configuration
