@@ -3,9 +3,9 @@ import pandas as pd
 import numpy as np
 import os
 os.getcwd()
+# os.chdir(r'/Users/eveadam/Dropbox/PHD/alert-fatigue/model_pipeline')
 # Load data
-df = pd.read_csv("C:/Users/hibaa/Documents/GitHub/alert-fatigue/alert_analysis/data/main_data_2022/df_main_active_adult_renamed.csv")
-
+df = pd.read_csv("../alert_analysis/data/main_data_2022/df_main_active_adult_renamed.csv")
 #hiba_new_columns
 
 #create a new column called atc_group_ud
@@ -66,11 +66,12 @@ freq_table['percent'] = (freq_table['count'] / freq_table['count'].sum() * 100).
 print(freq_table)
 
 #create a new column called unit_category_ud
-selected_unit_categories = [
-    'Internal', 'Surgery', 'Gynecology', 'Cardiology', 'Emergency',
-    'Internal-Covid19', 'Geriatric', 'Hematology', 'Nephrology', 'Oncology'
+other_units_categories = [
+     'Gynecology', 'Cardiology',
+     'Geriatric', 'Hematology', 'Nephrology', 'Oncology'
 ]
-df['unit_category_ud'] = df['unit_category'].apply(lambda x: x if x in selected_unit_categories else 'OTHER')
+internal_categories = ['Internal', 'Internal-Covid19']
+df['unit_category_ud'] = df['unit_category'].apply(lambda x: 'OTHER' if x in other_units_categories else  'new_internal' if x in internal_categories else x)
 
 #frequency table of unit_category_ud
 freq_table = df['unit_category_ud'].value_counts().reset_index()
