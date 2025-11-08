@@ -23,7 +23,7 @@ def get_config() -> Dict[str, Any]:
     # ============================================================================
     config = {
         # Input data
-        'input_csv_path': "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_100pct.csv",
+        'input_csv_path': "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv",
         'date_column': "time_prescribing_order",
         'target_column': "alert_status_binary",
         # 'feature_columns': ["age", "gender", "hospital_days", "charlson_score",
@@ -51,6 +51,11 @@ def get_config() -> Dict[str, Any]:
         'impute_numeric': True,
         'scale_numeric': False,
         'rare_category_threshold': 0.01,
+        # If True, use OneHotPreprocessor (one-hot encoding for multi-level categoricals)
+        # If False, use Preprocessor (categorical encoding via statsmodels)
+        'use_onehot_encoding': True,
+        # If use_onehot_encoding=True, handle unseen categories (True) or raise error (False)
+        'handle_unseen_categories': False,
         
         # Output settings
         'output_dir': os.path.normpath("model_pipeline/outputs"),
@@ -104,7 +109,7 @@ def get_config() -> Dict[str, Any]:
         raise ValueError("feature_columns contains duplicate values")
     
     # Validate boolean flags
-    boolean_fields = ['ascending', 'stratify', 'impute_numeric', 'scale_numeric', 'generate_profile', 'use_glm']
+    boolean_fields = ['ascending', 'stratify', 'impute_numeric', 'scale_numeric', 'generate_profile', 'use_glm', 'use_onehot_encoding', 'handle_unseen_categories']
     for field in boolean_fields:
         if not isinstance(config[field], bool):
             raise ValueError(f"{field} must be a boolean, got {type(config[field])}")

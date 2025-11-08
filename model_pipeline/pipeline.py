@@ -17,6 +17,7 @@ from .evaluation.plots import (
 )
 from .models.statsmodels_logit import StatsmodelsLogitModel
 from .preprocess import Preprocessor
+from .preprocess_onehot import OneHotPreprocessor
 from .reporting.coefficients import (
     coefficients_to_or, create_coefficient_summary, filter_significant_coefficients,
     sort_coefficients_by_importance
@@ -86,18 +87,33 @@ def run_preprocessing_only(config: Dict[str, Any], run_dir: str = None) -> Tuple
     
     # Preprocess data
     print("\nPreprocessing data...")
-    preprocessor = Preprocessor(
-        impute_numeric=config['impute_numeric'],
-        scale_numeric=config['scale_numeric'],
-        rare_category_threshold=config['rare_category_threshold'],
-        categorical_reference_levels=config.get('categorical_reference_levels')
-    )
+    use_onehot = config.get('use_onehot_encoding', False)
+    
+    if use_onehot:
+        preprocessor = OneHotPreprocessor(
+            impute_numeric=config['impute_numeric'],
+            scale_numeric=config['scale_numeric'],
+            rare_category_threshold=config['rare_category_threshold'],
+            categorical_reference_levels=config.get('categorical_reference_levels'),
+            handle_unseen_categories=config.get('handle_unseen_categories', False)
+        )
+        print(f"  Using OneHotPreprocessor (one-hot encoding for multi-level categoricals)")
+    else:
+        preprocessor = Preprocessor(
+            impute_numeric=config['impute_numeric'],
+            scale_numeric=config['scale_numeric'],
+            rare_category_threshold=config['rare_category_threshold'],
+            categorical_reference_levels=config.get('categorical_reference_levels')
+        )
+        print(f"  Using Preprocessor (categorical encoding via statsmodels)")
     
     # Log preprocessing configuration
     print(f"  Preprocessing configuration:")
     print(f"    - Impute numeric: {config['impute_numeric']}")
     print(f"    - Scale numeric: {config['scale_numeric']}")
     print(f"    - Rare category threshold: {config['rare_category_threshold']}")
+    if use_onehot:
+        print(f"    - Handle unseen categories: {config.get('handle_unseen_categories', False)}")
     
     # Fit preprocessor on training data
     train_features = train_df[config['feature_columns']]
@@ -140,6 +156,17 @@ def run_preprocessing_only(config: Dict[str, Any], run_dir: str = None) -> Tuple
     eval_processed = preprocessor.transform(eval_df[config['feature_columns']])
     test_processed = preprocessor.transform(test_df[config['feature_columns']])
     
+    # Handle feature column name changes after one-hot encoding
+    updated_feature_columns = config['feature_columns'].copy()
+    feature_mapping = None
+    if use_onehot and hasattr(preprocessor, 'get_feature_mapping'):
+        feature_mapping = preprocessor.get_feature_mapping()
+        # Get the new feature column names
+        updated_feature_columns = preprocessor.get_transformed_feature_names()
+        print(f"  Feature columns after one-hot encoding: {len(updated_feature_columns)} columns")
+        print(f"    Original: {config['feature_columns']}")
+        print(f"    Transformed: {updated_feature_columns[:5]}{'...' if len(updated_feature_columns) > 5 else ''}")
+    
     # Add target columns back
     train_processed[config['target_column']] = train_target
     eval_processed[config['target_column']] = eval_df[config['target_column']]
@@ -152,7 +179,12 @@ def run_preprocessing_only(config: Dict[str, Any], run_dir: str = None) -> Tuple
     print(f"    - Test: {test_processed.shape}")
     
     # Generate profile report if requested
-    artifacts = {}
+    artifacts = {
+        'updated_feature_columns': updated_feature_columns,
+        'original_feature_columns': config['feature_columns'],
+        'feature_mapping': feature_mapping,
+        'use_onehot_encoding': use_onehot
+    }
     if config['generate_profile']:
         print("\nGenerating profile report...")
         # Use provided run_dir if available, otherwise create new one
@@ -190,7 +222,9 @@ def run_full_training(config: Dict[str, Any]) -> Dict:
     print("Training logistic regression model...")
     model = StatsmodelsLogitModel(use_glm=config['use_glm'])
     
-    train_features = train_df[config['feature_columns']]
+    # Use updated feature columns if one-hot encoding was used
+    feature_columns_to_use = preprocessing_artifacts.get('updated_feature_columns', config['feature_columns'])
+    train_features = train_df[feature_columns_to_use]
     train_target = train_df[config['target_column']]
     
     model.fit(train_features, train_target)
@@ -215,7 +249,7 @@ def run_full_training(config: Dict[str, Any]) -> Dict:
     
     # Make predictions
     print("Making predictions...")
-    eval_features = eval_df[config['feature_columns']]
+    eval_features = eval_df[feature_columns_to_use]
     eval_target = eval_df[config['target_column']]
     
     eval_proba = model.predict_proba(eval_features)
