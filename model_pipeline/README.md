@@ -1,0 +1,335 @@
+# Alert Fatigue Analysis - Model Training Pipeline
+
+## Overview
+A comprehensive machine learning pipeline for predicting alert fatigue and medication errors in healthcare settings. This pipeline implements logistic regression models with robust preprocessing, time-based data splitting, and comprehensive evaluation metrics.
+
+## Essential Files Structure
+```
+model_pipeline/
+├── pipeline.py              # Main pipeline orchestrator
+├── run_pipeline.py          # Full pipeline execution (preprocessing + training)
+├── run_preprocessing.py     # Preprocessing only execution
+├── run_training_only.py     # Training only execution
+├── config.py                # Centralized configuration system
+├── data_loading.py          # Data loading and validation functions
+├── split.py                 # Time-based data splitting functions
+├── preprocess.py            # Data preprocessing and transformation
+├── README.md                # This documentation file
+├── evaluation/              # Model evaluation and metrics
+│   ├── __init__.py
+│   ├── metrics.py          # PR curves, ROC curves, threshold metrics
+│   └── plots.py            # Visualization plots (forest, PR curves)
+├── models/                  # Machine learning model implementations
+│   ├── __init__.py
+│   ├── base.py             # Base classifier interface
+│   └── statsmodels_logit.py # Logistic regression implementation
+├── reporting/               # Results reporting and saving
+│   ├── __init__.py
+│   ├── coefficients.py     # Coefficient analysis and odds ratios
+│   ├── profile.py          # Data profiling reports
+│   └── save.py             # File saving and directory management
+└── outputs/                 # Pipeline outputs and results
+```
+
+## Objectives
+- Build a simple, readable, modular pipeline to predict alert fatigue/medication errors.
+- Baseline model: logistic regression via statsmodels (avoid manual one-hot encoding with patsy formulas).
+- Strict separation of steps; extensible to CatBoost/XGBoost next.
+- All code and artifacts live under `model_pipeline/`.
+
+## Inputs and Assumptions
+- Input: CSV from the data pipeline (e.g., `df_main_active_adult_renamed.csv` or `df_patients_level_data.csv`).
+- Binary target column is provided by config (e.g., `target_column`).
+- Feature list provided by config. Other columns ignored.
+- Categorical features handled through statsmodels formula terms `C(col)` with frozen levels.
+- Numeric imputation and scaling are optional and controlled via function inputs (see Preprocessing).
+
+## High-Level Flow
+1. Load data.
+2. Predictive split into Train / Eval / Test by time order (percent allocations).
+3. (Optional) Profile training set (HTML ProfileReport). Disabled by default.
+4. Preprocess (fit on train; transform train/eval/test consistently; impute/scale optional).
+5. Train logistic regression (statsmodels Logit or GLM Binomial).
+6. Evaluate on eval set: predictions, PR curve, decile threshold metrics.
+7. Report results: coefficients → odds ratios (OR) with CIs; forest plot; PR curve plot; threshold table.
+8. Persist artifacts and a `run_summary.json` in a timestamped run folder.
+
+## Predictive Split (Time-Based)
+- Purpose: mimic real-world prediction by training on earlier data and evaluating on later periods.
+- Inputs:
+  - `date_column: str` – column with sortable datetime.
+  - `train_frac: float`, `eval_frac: float`, `test_frac: float` – must sum to 1.0.
+  - `ascending: bool` (default True) – earlier to later.
+  - `stratify: bool` (default False) – optional label-aware temporal split; if True, we approximate stratification while preserving chronology (best-effort; will report drift if large).
+- Behavior:
+  - Sort by `date_column` (ascending by default).
+  - Take first `train_frac` proportion as Train, next `eval_frac` as Eval, last `test_frac` as Test.
+  - If `stratify=True`, perform label-aware allocation within contiguous time buckets to reduce class imbalance drift, while maintaining temporal order.
+- Output: `train_df`, `eval_df`, `test_df` and a summary of class proportions across splits.
+
+## Preprocessing (Optional Impute/Scale)
+- Fit on Train only; apply to Eval/Test; persist parameters in-memory and to disk.
+- Function inputs control behavior:
+  - `impute_numeric: bool` (default True) – if True, impute numeric with Train medians.
+  - `scale_numeric: bool` (default False) – if True, standardize numeric with Train mean/std.
+  - `rare_category_threshold: float` (default 0.01) – bucket infrequent categories to "Other".
+- Numeric:
+  - Identify numeric columns (or accept explicit list).
+  - If `impute_numeric=True`, fill missings with Train medians.
+  - If `scale_numeric=True`, standardize using Train stats.
+- Categorical:
+  - Cast to `category`.
+  - Freeze category levels from Train; unseen categories in Eval/Test map to "Other".
+  - Pass frozen levels to patsy via `C(col, levels=[...])` to stabilize encoding across splits.
+  - Optional: set a reference category per feature via `categorical_reference_levels` in `config.py`. If the requested reference is not among frozen levels (e.g., dropped as rare), the default reference is used and a warning is emitted.
+
+## Modeling (Statsmodels Logistic Regression)
+- Wrapper builds a patsy formula from `feature_columns` and `target_column`:
+  - Numeric features included directly.
+  - Categorical features included as `C(col, levels=[...])` with Train-frozen levels.
+- Fit `Logit` or `GLM(Binomial, logit)`; store fitted result.
+- Predict probabilities on Eval/Test given preprocessed frames with the same schema.
+- Extract coefficients, standard errors, and CIs for reporting; convert to ORs.
+
+## Evaluation (on Eval Set)
+- Compute predicted probabilities.
+- Precision–Recall (PR) curve and AUC-PR.
+- Threshold table at 10 percentiles (0.1–1.0): threshold, precision, recall, F1, specificity, accuracy, positive rate, TP/FP/TN/FN counts.
+- Optional: pick a default threshold (0.5 or F1-max) for headline metrics.
+
+## Reporting and Artifacts
+- Training ProfileReport (HTML) via `ydata-profiling` (optional; enable via `generate_profile=True`).
+- Coefficients → OR table (with 95% CI) saved as CSV.
+- Forest plot of ORs (sorted by distance from 1.0) saved as PNG.
+- PR curve plot saved as PNG.
+- Threshold metrics table saved as CSV.
+- Eval predictions CSV (ids optional if provided) for auditability.
+- Timestamped run directory under `model_pipeline/outputs/{timestamp}/` containing:
+  - `config_used.json`, `run_summary.json`
+  - `train_profile_report.html`
+  - `coefficients_or.csv`, `coefficients_forest.png`
+  - `pr_curve.png`, `threshold_metrics.csv`, `eval_predictions.csv`
+
+## Module Layout
+- `config.py` – centralized configuration system with validation and defaults.
+- `data_loading.py` – CSV loading, dtype parsing, column validation.
+- `split.py` – predictive time-based split; optional stratified-random split for comparison.
+- `preprocess.py` – `Preprocessor` with optional numeric impute/scale, rare-category handling, schema freeze.
+- `models/`
+  - `base.py` – `BaseBinaryClassifier` interface.
+  - `statsmodels_logit.py` – logistic regression wrapper.
+- `evaluation/`
+  - `metrics.py` – PR curve, AUC-PR, threshold table, summary metrics.
+  - `plots.py` – PR curve and OR forest plots.
+- `reporting/`
+  - `profile.py` – training ProfileReport generation.
+  - `coefficients.py` – OR table from fitted result.
+  - `save.py` – run folder management and safe file writes.
+- `pipeline.py` – `ModelTrainingPipeline` orchestrator.
+- `run_pipeline.py` – Main execution script.
+
+## Centralized Configuration System
+The pipeline uses a **single configuration source** that all scripts automatically import and use. This ensures consistency and makes maintenance easy.
+
+### Configuration Function
+```python
+# In config.py - modify values here to change across all scripts
+def get_config() -> Dict[str, Any]:
+    """Central configuration function - modify values here."""
+    config = {
+        # Input data
+        'input_csv_path': "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv",
+        'date_column': "time_prescribing_order",
+        'target_column': "alert_status_binary",
+        'feature_columns': ["age", "gender", "hospital_days", "charlson_score", "shift_type", "unit_category"],
+        
+        # Data splitting
+        'train_frac': 0.7,
+        'eval_frac': 0.15,
+        'test_frac': 0.15,
+        'ascending': True,
+        'stratify': False,
+        
+        # Reproducibility
+        'random_seed': 42,
+        
+        # Preprocessing options
+        'impute_numeric': True,
+        'scale_numeric': False,
+        'rare_category_threshold': 0.01,
+        
+        # Output settings
+        'output_dir': "model_pipeline/outputs",
+        'generate_profile': True,
+        
+        # Model options
+        'use_glm': True,
+
+        # Optional categorical reference categories per feature
+        # Example: {'gender': 'F', 'unit_category_ud': 'ICU'}
+        'categorical_reference_levels': {}
+    }
+    
+    # Automatic validation happens here
+    # ... validation code ...
+    
+    return config
+```
+
+### How to Use
+1. **Modify configuration**: Edit values in the `get_config()` function in `config.py`
+2. **All scripts automatically use** the new values
+3. **No need to update** individual run scripts
+4. **Validation happens automatically** when any script runs
+5. **Truly centralized** - one place to modify everything
+
+### Configuration Parameters
+- **Data**: `input_csv_path`, `date_column`, `target_column`, `feature_columns`
+- **Splitting**: `train_frac`, `eval_frac`, `test_frac`, `ascending`, `stratify`
+- **Preprocessing**: `impute_numeric`, `scale_numeric`, `rare_category_threshold`
+  - Optional: `categorical_reference_levels` – mapping feature -> desired reference category
+- **Output**: `output_dir`, `generate_profile`
+- **Model**: `use_glm`
+
+## Quick Start
+1. **Prepare your data**: Ensure you have a CSV with your features and a binary target column
+2. **Update configuration**: Modify the configuration in `config.py` (single source of truth)
+3. **Choose your execution mode** (run from the root `alert-fatigue` directory):
+   - **Full pipeline**: `python run_pipeline.py` (preprocessing + training)
+   - **Preprocessing only**: `python run_preprocessing.py` (data preparation + inspection)
+   - **Training only**: `python run_training_only.py` (assumes preprocessing done)
+4. **Check results**: Find outputs in `model_pipeline/outputs/{timestamp}/`
+
+**Note**: You can also run from the `model_pipeline` subdirectory using the same script names.
+
+## Avoiding Python Caching Issues
+If you modify configuration values in `config.py` but don't see the changes reflected when running scripts, you may be experiencing Python caching issues. Here are solutions:
+
+### Option 1: Use the -B flag (Recommended)
+```bash
+# This prevents Python from creating .pyc cache files
+python -B run_pipeline.py
+python -B run_preprocessing.py
+python -B run_training_only.py
+```
+
+### Option 2: Clear Python cache manually
+```bash
+# Remove all Python cache files
+rm -rf __pycache__/
+rm -rf */__pycache__/
+rm -rf ./*.pyc
+```
+
+### Option 3: Force module reload
+```bash
+# Reload the config module before running
+python -c "import importlib; import config; importlib.reload(config)" && python run_pipeline.py
+```
+
+**Why this happens**: Python caches compiled bytecode (`.pyc` files) to improve performance. When you modify source files, these cached files may not be updated immediately, causing scripts to use old values.
+
+**Best practice**: Always use the `-B` flag when developing or testing configuration changes to ensure you're running the latest version of your code.
+
+## Execution Modes
+
+### 1. Full Pipeline (Preprocessing + Training)
+```bash
+# From root alert-fatigue directory
+python run_pipeline.py
+
+# Or from model_pipeline subdirectory
+cd model_pipeline
+python run_pipeline.py
+```
+Runs the complete pipeline from data loading through model training and evaluation.
+
+### 2. Preprocessing Only
+```bash
+# From root alert-fatigue directory
+python run_preprocessing.py
+
+# Or from model_pipeline subdirectory
+cd model_pipeline
+python run_preprocessing.py
+```
+Runs only the preprocessing step with detailed logging about:
+- Data loading and splitting
+- Missing value imputation details
+- Categorical feature processing
+- Data transformation results
+- Profile report generation (optional)
+
+This is useful for:
+- Inspecting your data after preprocessing
+- Debugging data quality issues
+- Understanding feature transformations
+- Validating data splits before training
+
+### 3. Training Only
+```bash
+# From root alert-fatigue directory
+python run_training_only.py
+
+# Or from model_pipeline subdirectory
+cd model_pipeline
+python run_training_only.py
+```
+Runs only the model training step, assuming preprocessing has already been completed.
+This is useful for:
+- Iterating on model parameters
+- Testing different model configurations
+- Faster development cycles
+
+## Example Configuration
+```python
+# Configuration used in all scripts (from config.py)
+config = {
+    'input_csv_path': "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv",
+    'date_column': "time_prescribing_order",
+    'target_column': "alert_status_binary",
+    'feature_columns': ["age", "gender", "hospital_days", "charlson_score", "shift_type", "unit_category"],
+    'train_frac': 0.7,
+    'eval_frac': 0.15,
+    'test_frac': 0.25,
+    'ascending': True,
+    'stratify': False,
+    'random_seed': 42,
+    'impute_numeric': True,
+    'scale_numeric': False,
+    'rare_category_threshold': 0.01,
+    'output_dir': "model_pipeline/outputs",
+    'generate_profile': True,
+    'use_glm': True,
+    'categorical_reference_levels': {
+        'gender': 'F',
+        'unit_category_ud': 'ICU'
+    }
+}
+```
+
+## Minimal Public APIs (signatures)
+- `split.predictive_time_split(df, date_column, train_frac, eval_frac, test_frac, ascending=True, stratify=False) -> (train_df, eval_df, test_df)`
+- `preprocess.Preprocessor.fit(df, numeric_cols, categorical_cols, impute_numeric=True, scale_numeric=False, rare_category_threshold=0.01) -> None`
+- `preprocess.Preprocessor.transform(df) -> pd.DataFrame`
+- `models.statsmodels_logit.StatsmodelsLogitModel(formula).fit(df) -> None`
+- `models.statsmodels_logit.StatsmodelsLogitModel.predict_proba(df) -> np.ndarray`
+- `evaluation.metrics.compute_pr(y_true, y_score) -> dict`
+- `evaluation.metrics.threshold_table(y_true, y_score, percentiles: list[float]) -> pd.DataFrame`
+- `reporting.profile.generate_profile_report(df, output_path) -> str`
+- `reporting.coefficients.coefficients_to_or(result) -> pd.DataFrame`
+- `evaluation.plots.plot_or_forest(or_df, output_path) -> str`
+- `evaluation.plots.plot_pr_curve(precision, recall, output_path) -> str`
+
+## Extensibility & Simplicity
+- Keep modules small and names explicit; minimize abstraction.
+- Future models (CatBoost/XGBoost) can plug into `BaseBinaryClassifier` with the same preprocessing and evaluation.
+- Preprocessing flags allow skipping imputation/scaling for tree-based models.
+
+## Notes for Future Improvements
+- Robust temporal stratification: experiment with target-conditional time binning to better balance labels without breaking chronology.
+- Calibration curves and Brier score for probability quality.
+- Group-aware splits (e.g., by patient or unit) to avoid leakage.
+- Automatically detect and warn about label drift across splits.
+
+

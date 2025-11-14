@@ -540,10 +540,21 @@ def save_data(data, output_path):
 # -------------------------------
 
 def main():
-    input_file = os.path.join('alert_analysis', 'data', 'main_data_2022', 'emek.data - Copy.csv')
+    relative_input = os.path.join('alert_analysis', 'data', 'main_data_2022', 'emek.data - Copy.csv')
+    absolute_input = '/Users/eveadam/Dropbox/PHD/alert_analysis/data/main_data_2022/emek.data - Copy.csv'
     output_file = os.path.join('alert_analysis', 'data_process', 'data_main_prep.csv')
 
-    data = load_data(input_file)
+    try:
+        data = load_data(relative_input)
+        print(f"Loaded input file from relative path: {relative_input}")
+    except FileNotFoundError:
+        try:
+            data = load_data(absolute_input)
+            print(f"Relative path not found. Loaded input file from absolute path: {absolute_input}")
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                f"Input file not found at either relative path '{relative_input}' or absolute path '{absolute_input}'."
+            ) from e
 
     process_hospital_columns(data)
     process_unit(data)
