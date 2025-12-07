@@ -9,16 +9,38 @@ df = pd.read_csv("../alert_analysis/data/main_data_2022/df_main_active_adult_ren
 #hiba_new_columns
 
 #create a new column called atc_group_ud
+# Create the list of selected ATC groups for direct categories
 selected_atc_groups = [
     'ANALGESICS',
     'ANTITHROMBOTIC AGENTS',
     'ANTIBACTERIALS FOR SYSTEMIC USE',
-    'DRUGS USED IN DIABETES',
-    'PSYCHOLEPTICS'
-]
-df['atc_group_ud'] = df['atc_group'].apply(lambda x: x if x in selected_atc_groups else 'OTHER')
+    'DRUGS USED IN DIABETES'
+    ]
 
-#frequency table of atc_group_ud
+# Define cardiovascular ATC groups
+cardiovascular_groups = [
+    'CALCIUM CHANNEL BLOCKERS',
+    'CARDIAC THERAPY',
+    'AGENTS ACTING ON THE RENIN-ANGIOTENSIN SYSTEM',
+    'LIPID MODIFYING AGENTS',
+    'ANTIHYPERTENSIVES',
+    'BETA BLOCKING AGENTS',
+    'DIURETICS'
+]
+
+# Function to categorize each ATC group
+def classify_atc(x):
+    if x in selected_atc_groups:
+        return x
+    elif x in cardiovascular_groups:
+        return 'CARDIOVASCULAR DRUGS'
+    else:
+        return 'OTHER'
+
+# Create new column
+df['atc_group_ud'] = df['atc_group'].apply(classify_atc)
+
+# Build frequency table
 freq_table = df['atc_group_ud'].value_counts().reset_index()
 freq_table.columns = ['atc_group_ud', 'count']
 freq_table['percent'] = (freq_table['count'] / freq_table['count'].sum() * 100).round(2)
@@ -189,7 +211,7 @@ validation_errors = []
 # Define expected values for each categorical column
 expected_values = {
     'atc_group_ud': ['ANALGESICS', 'ANTITHROMBOTIC AGENTS', 'ANTIBACTERIALS FOR SYSTEMIC USE', 
-                     'DRUGS USED IN DIABETES', 'PSYCHOLEPTICS', 'OTHER'],
+                     'DRUGS USED IN DIABETES', 'CARDIOVASCULAR DRUGS', 'OTHER'],
     'prescription_day': ['WEEKEND', 'WEEKDAY'],
     'chronic_med_ud': ['0', '<5', '>=5'],
     'hospital_category': ['Small hospital', 'Medium hospital', 'Large hospital', 'Other'],
@@ -278,9 +300,9 @@ df_sample = df.sample(n=int(len(df) * 1.0), random_state=42)
 #df_sample = df.sample(n=int(len(df) * 0.10), random_state=42)
 
 # Save 10% sample
-#df_sample.to_csv("C:/Users/hibaa/Documents/GitHub/alert-fatigue/alert_analysis/data/main_data_2022/df_main_active_adult_renamed_new_clean_sample_10pct.csv", index=False)
-#print(f"Saved {len(df_sample):,} rows")
+df_sample.to_csv("C:/Users/hibaa/Documents/GitHub/alert-fatigue/alert_analysis/data/main_data_2022/df_main_active_adult_renamed_new_clean_sample_10pct.csv", index=False)
+print(f"Saved {len(df_sample):,} rows")
 
 # Save 100% sample
-df_sample.to_csv("C:/Users/hibaa/Documents/GitHub/alert-fatigue/alert_analysis/data/main_data_2022/df_main_active_adult_renamed_new_clean_sample_100pct.csv", index=False)
-print(f"Saved {len(df_sample):,} rows")
+#df_sample.to_csv("C:/Users/hibaa/Documents/GitHub/alert-fatigue/alert_analysis/data/main_data_2022/df_main_active_adult_renamed_new_clean_sample_100pct.csv", index=False)
+#print(f"Saved {len(df_sample):,} rows")
