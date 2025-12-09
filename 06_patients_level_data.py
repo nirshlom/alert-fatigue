@@ -46,6 +46,7 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         'age',  # renamed from AGE_num
         'age_category',  # renamed from Age_cat
         'unit_category',  # renamed from UnitName_cat
+        'unit_category_ud',# renamed from UnitName_cat_ud 
         'chronic_diagnosis',  # renamed from DiagnosisInReception
         'hospital_diagnosis',  # renamed from HospDiagnosis
         'alert_type',  # renamed from Alert_type
@@ -58,11 +59,27 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         'neo_dosing_single_dose',  
         'neo_dosing_max_daily_dose',  
         'hospital_name',
+        'chronic_med_ud',
         'medication_orders_hospatalization',
         'survival_rate_10y_age_adj',
         'charlson_score_age_adj',
         'hospital_days',
         'num_of_chronic_diagnosis',
+        'kidney_disease',
+        'hepatic_disease',
+        'diabetes_disease',
+        'ischemic_heart_disease',
+        'copd_disease',
+        'cerebrovascular_disease',
+        'peptic_ulcer_disease',
+        'dementia_disease',
+        'oncological_disease',
+        'hemato_oncological_disease',
+        'hypertension_disease',
+        'atrial_fibrillation_disease',
+        'hyperlipidemia_disease',
+        'congestive_heart_failure_disease',
+        'obesity_disease',
     ] + count_columns  # Add all count columns
     
     missing_columns = [col for col in required_columns if col not in df.columns]
@@ -210,7 +227,7 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
 
 def main():
     # File paths
-    input_file = "alert_analysis/data/main_data_2022/df_main_active_adult_renamed.csv"
+    input_file = "alert_analysis/data/main_data_2022/df_main_active_adult_renamed_new_clean_sample_100pct.csv"
     output_file = "alert_analysis/data/main_data_2022/df_patients_level_data.csv"
     
     # Read data
