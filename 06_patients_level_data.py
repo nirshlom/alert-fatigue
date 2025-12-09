@@ -28,7 +28,10 @@ def get_count_columns(df: pd.DataFrame) -> list:
 
 
 def convert_unit_cat(df: pd.DataFrame, col):
-    df[col] = df[col].apply(lambda x: 1 if x > 0 else 0)
+    """Convert numeric unit count columns to binary (0/1) format."""
+    # Only convert if the column is numeric
+    if df[col].dtype in ['int64', 'float64', 'int32', 'float32']:
+        df[col] = df[col].apply(lambda x: 1 if x > 0 else 0)
     return df
 
 def group_and_save_patient_data(df: pd.DataFrame) -> None:
@@ -103,6 +106,8 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         'gender': 'first',
         'age': 'first',
         'age_category': 'first',
+        'unit_category_ud': 'first',  # Add unit_category_ud
+        'chronic_med_ud': 'first',  # Add chronic_med_ud
         'response_reasons_other_text': lambda x: '; '.join(x.dropna().unique()),
         'dosing_frequency': 'sum',
         'dosing_single_dose': 'sum',
@@ -113,7 +118,23 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         'hospital_name': lambda x: x.nunique(),  # Count unique hospitals
         'survival_rate_10y_age_adj': 'mean',
         'charlson_score_age_adj': 'mean',
-        'hospital_days': 'mean'
+        'hospital_days': 'mean',
+        # Add all disease columns
+        'kidney_disease': 'first',
+        'hepatic_disease': 'first',
+        'diabetes_disease': 'first',
+        'ischemic_heart_disease': 'first',
+        'copd_disease': 'first',
+        'cerebrovascular_disease': 'first',
+        'peptic_ulcer_disease': 'first',
+        'dementia_disease': 'first',
+        'oncological_disease': 'first',
+        'hemato_oncological_disease': 'first',
+        'hypertension_disease': 'first',
+        'atrial_fibrillation_disease': 'first',
+        'hyperlipidemia_disease': 'first',
+        'congestive_heart_failure_disease': 'first',
+        'obesity_disease': 'first',
     }
     
     # Add count columns with mean aggregation
@@ -210,8 +231,8 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         grouped[bool_col] = grouped[mean_col] > 0
         grouped = grouped.drop(columns=[mean_col])  # drop the mean column
 
-    # Convert all unit columns to binary (0/1) format
-    unit_columns = [col for col in grouped.columns if col.startswith('unit_')]
+    # Convert all unit count columns (but not unit_category_ud) to binary (0/1) format
+    unit_columns = [col for col in grouped.columns if col.startswith('unit_') and col != 'unit_category_ud']
     for col in unit_columns:
         grouped = convert_unit_cat(df=grouped, col=col)
     
