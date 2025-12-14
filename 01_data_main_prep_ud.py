@@ -513,18 +513,54 @@ def process_response_type(data):
     """
     Create ResponseType_cat:
       - If ResponseType contains "Change", set to "Change".
-      - Else if ResponseType equals "Non Alert" and Alert_Message is not missing, set to "Non_stoping_alert".
-      - Otherwise, keep the original ResponseType.
+      - Else if ResponseType equals "Ignore", set to "Ignore".
+      - Else if ResponseType = "Non_alert" and Alert_Message is empty, set to "No_response_need".
+      - Else if ResponseType = "Non_alert" and Alert_Message is not empty, set to "No_documented_response".
+      - Else if Response (response_reasons_codes) has a value, set to "Ignore".
+      - Otherwise, set to "No_response_fit".
     """
-    data['ResponseType_cat'] = np.where(
-        data['ResponseType'].str.contains("Change", na=False),
-        "Change",
-        np.where(
-            (data['ResponseType'] == "Non Alert") & (data['Alert_Message'].notna()),
-            "Non_stoping_alert",
-            data['ResponseType']
-        )
-    )
+    # Initialize ResponseType_cat
+    data['ResponseType_cat'] = "No_response_fit"
+    
+    # Priority 1: If ResponseType contains "Change", set to "Change"
+    mask_change = data['ResponseType'].str.contains("Change", na=False)
+    data.loc[mask_change, 'ResponseType_cat'] = "Change"
+    
+    # Priority 2: If ResponseType equals "Ignore", set to "Ignore"
+    mask_ignore = (data['ResponseType'] == "Ignore")
+    data.loc[mask_ignore & ~mask_change, 'ResponseType_cat'] = "Ignore"
+    
+    # Priority 3: Handle "Non_alert" cases
+    # Check for NaN, empty string, or string representation of NaN/None
+    alert_msg_str = data['Alert_Message'].astype(str).str.strip()
+    mask_alert_empty = (data['Alert_Message'].isna() | 
+                        (alert_msg_str == '') | 
+                        (alert_msg_str == 'nan') |
+                        (alert_msg_str == 'None'))
+    mask_alert_not_empty = ~mask_alert_empty
+    
+    # If ResponseType = "Non_alert" and Alert_Message is empty → "No_response_need"
+    mask_non_alert_empty = (data['ResponseType'] == "Non_alert") & mask_alert_empty
+    mask_not_set_yet = ~mask_change & ~mask_ignore
+    data.loc[mask_non_alert_empty & mask_not_set_yet, 'ResponseType_cat'] = "No_response_need"
+    
+    # If ResponseType = "Non_alert" and Alert_Message is not empty → "No_documented_response"
+    mask_non_alert_not_empty = (data['ResponseType'] == "Non_alert") & mask_alert_not_empty
+    data.loc[mask_non_alert_not_empty & mask_not_set_yet, 'ResponseType_cat'] = "No_documented_response"
+    
+    # Priority 4: If Response has a value, set to "Ignore" (but not if already set)
+    if 'Response' in data.columns:
+        response_str = data['Response'].astype(str).str.strip()
+        mask_has_response = (data['Response'].notna() & 
+                           (response_str != '') & 
+                           (response_str != 'nan') &
+                           (response_str != 'None'))
+        # Only set to "Ignore" if not already categorized and Response has a value
+        mask_not_set = (data['ResponseType_cat'] == "No_response_fit")
+        data.loc[mask_has_response & mask_not_set, 'ResponseType_cat'] = "Ignore"
+    else:
+        print("Warning: 'Response' column not found. Skipping 'ignore' assignment based on response_reasons_codes.")
+    
     data['ResponseType_cat'] = data['ResponseType_cat'].astype('category')
     print("ResponseType_cat processed.")
 
