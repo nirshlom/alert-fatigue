@@ -7,6 +7,7 @@ from charlson_index import calculate_cci  # Assumes you have this module availab
 
 def load_main_data():
     print("Loading main data from CSV...")
+    # Use Python engine for large files to avoid memory issues
     df = pd.read_csv('alert_analysis/data_process/data_main_prep.csv')
     assert not df.empty, "Loaded main data is empty!"
     return df
@@ -157,7 +158,7 @@ def add_first_word_columns(data):
 
 def process_basic_atc():
     print("Processing BASIC_NAME_ATC data...")
-    basic_atc = pd.read_csv("alert_analysis/data/BASIC_NAME_ATC.csv")
+    basic_atc = pd.read_excel("alert_analysis/data/BASIC NAME - ATC CODE.xlsx", engine='openpyxl')
     basic_atc = basic_atc[["ATC5", "BASIC NAME"]]
     basic_atc = basic_atc.drop_duplicates()
     basic_atc = basic_atc.rename(columns={"BASIC NAME": "BASIC_NAME_EXT"})
