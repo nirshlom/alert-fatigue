@@ -7,17 +7,17 @@ df_main_active_adult.head(10)
 
 
 # Filter for response type ignore change 
-df_filtered_response_type = df_main_active_adult[df_main_active_adult['response_type'].isin(["Change", "Ignore"])].copy()
+df_filtered_response_type = df_main_active_adult[df_main_active_adult['response_type_ud'].isin(["Change", "Ignore"])].copy()
 print(df_filtered_response_type.shape)
 df_filtered_response_type.head(10)
 
 # verify the remaining values are only 0 and 1
-df_filtered_response_type['response_type'].value_counts(dropna=False)
+df_filtered_response_type['response_type_ud'].value_counts(dropna=False)
 
 
 # Crosstab: number of medication orders vs alert_status_binary
 crosstab_table = pd.crosstab(
-    df_filtered_response_type['response_type'],
+    df_filtered_response_type['response_type_ud'],
     "drug_order_count",
     values=df_filtered_response_type['drug_order_id'],
     aggfunc='nunique'
