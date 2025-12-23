@@ -411,7 +411,11 @@ def process_alert_rn_severity(data):
     data.loc[mask, 'Alert_Rn_Severity_cat'] = "NeoDRC"
 
     # Condition 6: DRC types
-    drc_types = ["DRC - Frequency 1", "DRC - Single Dose 1", "DRC - Single Dose 2", "DRC - Max Daily Dose 1"]
+    drc_types = [
+        "DRC - Frequency 1", "DRC - Frequency 2", "DRC - Frequency 3",
+        "DRC - Single Dose 1", "DRC - Single Dose 2", "DRC - Single Dose 3",
+        "DRC - Max Daily Dose 1", "DRC - Max Daily Dose 2", "DRC - Max Daily Dose 3"
+    ]
     mask = data['Module_Alert_Rn'].isin(drc_types)
     data.loc[mask, 'Alert_Rn_Severity_cat'] = "DRC"
 
@@ -447,10 +451,12 @@ def process_alert_rn_severity(data):
 
 def process_below_exceed_dose(data):
     """
-    Creates six new columns indicating dose direction (exceeds/below) for different alert types:
-    1. dose_direction_DRC_Frequency_1
-    2. dose_direction_DRC_Single_Dose_1
-    3. dose_direction_DRC_Max_Daily_Dose_1
+    Creates dose direction columns (exceeds/below) for different alert types:
+    DRC patterns:
+    1. dose_direction_DRC_Frequency_1, 2, 3
+    2. dose_direction_DRC_Single_Dose_1, 2, 3
+    3. dose_direction_DRC_Max_Daily_Dose_1, 2, 3
+    NeoDRC patterns:
     4. dose_direction_NeoDRC_Frequency_1
     5. dose_direction_NeoDRC_Single_Dose_1
     6. dose_direction_NeoDRC_Max_Daily_Dose_1
@@ -464,16 +470,26 @@ def process_below_exceed_dose(data):
         data (pd.DataFrame): Input DataFrame containing 'Module_Alert_Rn' and 'Alert_Message' columns.
 
     Returns:
-        pd.DataFrame: The modified DataFrame with six new dose direction columns.
+        pd.DataFrame: The modified DataFrame with dose direction columns.
     """
     # Ensure 'Alert_Message' column is of string type
     data['Alert_Message'] = data['Alert_Message'].astype(str)
 
     # Define the alert types and their corresponding columns
     alert_types = {
+        # DRC Frequency patterns
         'DRC - Frequency 1': 'dose_direction_DRC_Frequency_1',
+        'DRC - Frequency 2': 'dose_direction_DRC_Frequency_2',
+        'DRC - Frequency 3': 'dose_direction_DRC_Frequency_3',
+        # DRC Single Dose patterns
         'DRC - Single Dose 1': 'dose_direction_DRC_Single_Dose_1',
+        'DRC - Single Dose 2': 'dose_direction_DRC_Single_Dose_2',
+        'DRC - Single Dose 3': 'dose_direction_DRC_Single_Dose_3',
+        # DRC Max Daily Dose patterns
         'DRC - Max Daily Dose 1': 'dose_direction_DRC_Max_Daily_Dose_1',
+        'DRC - Max Daily Dose 2': 'dose_direction_DRC_Max_Daily_Dose_2',
+        'DRC - Max Daily Dose 3': 'dose_direction_DRC_Max_Daily_Dose_3',
+        # NeoDRC patterns
         'NeoDRC - Frequency 1': 'dose_direction_NeoDRC_Frequency_1',
         'NeoDRC - Single Dose 1': 'dose_direction_NeoDRC_Single_Dose_1',
         'NeoDRC - Max Daily Dose 1': 'dose_direction_NeoDRC_Max_Daily_Dose_1'
@@ -497,8 +513,18 @@ def process_below_exceed_dose(data):
 
 def process_drc_subgroup(data):
     """Create DRC_SUB_GROUP and NeoDRC_SUB_GROUP columns based on Module_Alert_Rn."""
-    drc_values = ["DRC - Duration 1", "DRC - Frequency 1", "DRC - Max Daily Dose 1", "DRC - Message 1",
-                  "DRC - Single Dose 1"]
+    drc_values = [
+        # DRC Duration patterns
+        "DRC - Duration 1",
+        # DRC Frequency patterns
+        "DRC - Frequency 1", "DRC - Frequency 2", "DRC - Frequency 3",
+        # DRC Max Daily Dose patterns
+        "DRC - Max Daily Dose 1", "DRC - Max Daily Dose 2", "DRC - Max Daily Dose 3",
+        # DRC Message patterns
+        "DRC - Message 1",
+        # DRC Single Dose patterns
+        "DRC - Single Dose 1", "DRC - Single Dose 2", "DRC - Single Dose 3"
+    ]
     data['DRC_SUB_GROUP'] = np.where(data['Module_Alert_Rn'].isin(drc_values), data['Module_Alert_Rn'], np.nan)
     data['DRC_SUB_GROUP'] = data['DRC_SUB_GROUP'].astype('category')
 
@@ -563,6 +589,7 @@ def process_response_type(data):
     
     data['ResponseType_cat'] = data['ResponseType_cat'].astype('category')
     print("ResponseType_cat processed.")
+
 
 
 def save_data(data, output_path):
