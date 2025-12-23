@@ -63,7 +63,7 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         'neo_dosing_max_daily_dose',  
         'hospital_name',
         'chronic_med_ud',
-        'medication_orders_hospatalization',
+        'medication_orders_hospitalization',
         'survival_rate_10y_age_adj',
         'charlson_score_age_adj',
         'hospital_days',
@@ -99,7 +99,7 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
     alert_types = ["Non_alert", "Non_Error_alert", "Error_Alert"]
     
     # Define response types
-    response_types = ["Non_alert_response", "Non_stoping_alert", "Ignore", "Change"]
+    response_type_ud_categories = ["No_response_need", "No_response_fit", "Ignore", "Change"]  # pyright: ignore[reportUnusedVariable, reportUnusedVariable]
     
     # Create base aggregation dictionary
     agg_dict = {
@@ -171,14 +171,14 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
     
     # Count responses by type for each patient
     print("\nResponse type counts in original data:")
-    print(df['response_type'].value_counts())
+    print(df['response_type_ud'].value_counts())
     
-    response_counts = df.groupby(['id1', 'response_type']).size().unstack(fill_value=0)
+    response_counts = df.groupby(['id1', 'response_type_ud']).size().unstack(fill_value=0)
     print("\nResponse counts per patient (first 5 rows):")
     print(response_counts.head())
     
     # Merge response counts with grouped data
-    for response in response_types:
+    for response in response_type_ud_categories:
         grouped[f'is_{response}'] = grouped['id1'].map(response_counts[response])
     
     # Fill NaN values with 0 for the new count columns
@@ -188,7 +188,7 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
     #TODO: after the aggregation, convert all count_columns from get_count_columns(df)  to boolean. 0=False, >0=True. rename the columns to include _bool suffix specifically for columns with disease name in the column name.
     
     print("\nFinal counts in grouped data (first 5 rows):")
-    print(grouped[['id1'] + [f'unit_{unit}' for unit in unit_categories] + [f'is_{alert}' for alert in alert_types] + [f'is_{response}' for response in response_types]].head())
+    print(grouped[['id1'] + [f'unit_{unit}' for unit in unit_categories] + [f'is_{alert}' for alert in alert_types] + [f'is_{response}' for response in response_type_ud_categories]].head())
     
     # Rename columns to include aggregation type
     rename_dict = {
