@@ -331,7 +331,7 @@ def determine_alert_type(row) -> str:
 def determine_alert_status(row) -> str:
     """
     Determines the alert status based on alert type and specific alert category flags.
-    Returns one of: "Stoping_alert", "Non_stoping_alert", or "Non_alert".
+    Returns one of: "Stopping_alert", "Non_stopping_alert", or "Non_alert".
     """
     required_cols = [
         "Alert_type", "Technical_alerts_CAT",
@@ -341,9 +341,9 @@ def determine_alert_status(row) -> str:
         assert col in row.index, f"Missing column '{col}' in row."
 
     if row["Alert_type"] == "Error_Alert" or row.get("Technical_alerts_CAT") == 1:
-        return "Stoping_alert"
+        return "Stopping_alert"
     elif (row.get("DDI_Moderate_Interaction_CAT") == 1) or (row.get("DDI_Severe_Interaction_CAT") == 1):
-        return "Non_stoping_alert"
+        return "Non_stopping_alert"
     else:
         return "Non_alert"
 
@@ -394,11 +394,11 @@ def filter_and_save_final(df: pd.DataFrame) -> None:
     )
     df.loc[mask_non_alert, "ResponseType_cat"] = "Non_alert"
 
-    mask_non_stoping_alert = (
+    mask_non_stopping_alert = (
             (df["Alert_type"] == "Non_Error_alert") &
-            (df["Alert_status"] == "Non_stoping_alert")
+            (df["Alert_status"] == "Non_stopping_alert")
     )
-    df.loc[mask_non_stoping_alert, "ResponseType_cat"] = "Non_stoping_alert"
+    df.loc[mask_non_stopping_alert, "ResponseType_cat"] = "Non_stopping_alert"
 
     # Rename columns
     rename_map = {
