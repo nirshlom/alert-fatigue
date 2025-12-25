@@ -99,7 +99,7 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
     alert_types = ["Non_alert", "Non_Error_alert", "Error_Alert"]
     
     # Define response types
-    response_type_ud_categories = ["No_response_need", "No_response_fit", "Ignore", "Change"]  # pyright: ignore[reportUnusedVariable, reportUnusedVariable]
+    response_type_ud_categories = ["No_response_need", "Ignore", "Change"]  # pyright: ignore[reportUnusedVariable, reportUnusedVariable]
     
     # Create base aggregation dictionary
     agg_dict = {
