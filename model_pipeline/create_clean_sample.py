@@ -626,6 +626,38 @@ if 'alert_rn_severity' in df.columns:
     else:
         print("No NeoDRC rows found to drop")
 
+# Drop rows where alert_status = "Stoping_alert" OR dosing_message=2 OR response_type_ud="No_response_fit"
+rows_before = len(df)
+required_cols = ['alert_status', 'dosing_message', 'response_type_ud']
+missing_cols = [col for col in required_cols if col not in df.columns]
+
+if missing_cols:
+    print(f"Warning: Missing columns {missing_cols}, skipping row drop for alert_status/dosing_message/response_type_ud")
+else:
+    # Build mask with OR logic - drop if ANY condition is true
+    mask_to_drop = pd.Series([False] * len(df), index=df.index)
+    
+    # Condition 1: alert_status = "Stoping_alert"
+    if 'alert_status' in df.columns:
+        mask_to_drop |= df['alert_status'].isin(['Stoping_alert'])
+    
+    # Condition 2: dosing_message = 2
+    if 'dosing_message' in df.columns:
+        mask_to_drop |= (df['dosing_message'] == 2)
+    
+    # Condition 3: response_type_ud = "No_response_fit"
+    if 'response_type_ud' in df.columns:
+        mask_to_drop |= (df['response_type_ud'] == 'No_response_fit')
+    
+    if mask_to_drop.any():
+        num_dropped = mask_to_drop.sum()
+        df = df[~mask_to_drop].copy()
+        rows_after = len(df)
+        print(f"Dropped {num_dropped:,} rows where alert_status='Stoping_alert' OR dosing_message=2 OR response_type_ud='No_response_fit'")
+        print(f"Rows before: {rows_before:,}, Rows after: {rows_after:,}")
+    else:
+        print("No rows found matching the criteria (alert_status='Stoping_alert' OR dosing_message=2 OR response_type_ud='No_response_fit')")
+
 df_sample = df.sample(n=int(len(df) * 1.0), random_state=42)
 #df_sample = df.sample(n=int(len(df) * 0.10), random_state=42)
 
@@ -633,6 +665,6 @@ df_sample = df.sample(n=int(len(df) * 1.0), random_state=42)
 #df_sample.to_csv("C:/Users/hibaa/Documents/GitHub/alert-fatigue/alert_analysis/data/main_data_2022/df_main_active_adult_renamed_new_clean_sample_10pct.csv", index=False)
 #print(f"Saved {len(df_sample):,} rows")
 
-# Save 100% sample
+# save 100% sample
 df_sample.to_csv("C:/Users/hibaa/Documents/GitHub/alert-fatigue/alert_analysis/data/main_data_2022/df_main_active_adult_renamed_new_clean_sample_100pct.csv", index=False)
 print(f"Saved {len(df_sample):,} rows")
