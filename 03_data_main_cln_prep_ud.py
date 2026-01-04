@@ -202,12 +202,13 @@ def create_categorical_flags(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def calculate_chronic_num_calc(df: pd.DataFrame) -> pd.DataFrame:
-    """Calculate the chronic medication count and add it to the dataframe."""
-    print("Calculating chronic_num_calc...")
+    """Calculate the chronic medication count based on unique Basic_Name values and add it to the dataframe."""
+    print("Calculating chronic_num_calc (counting unique drug names)...")
+    # Count unique Basic_Name for each Medical_Record, id1 combination where OrderOrigin == "Chronic Meds"
     chronic_counts = (
         df[df['OrderOrigin'] == "Chronic Meds"]
-        .groupby(['Medical_Record', 'id1'])
-        .size()
+        .groupby(['Medical_Record', 'id1'])['Basic_Name']
+        .nunique()  # Count unique drug names instead of counting rows
         .reset_index(name='chronic_count')
     )
     df = df.merge(chronic_counts, on=['Medical_Record', 'id1'], how='left')
