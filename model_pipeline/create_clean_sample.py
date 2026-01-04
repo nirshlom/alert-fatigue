@@ -613,6 +613,45 @@ else:
     print("[OK] All categorical parameters are properly defined!")
     print("="*60 + "\n")
 
+# Fill chronic_med_count for rows where order_origin = "Medication Order" or "PROTOCOL"
+# Use the chronic_med_count value from "Chronic Meds" rows for the same medical_record and id1
+if 'order_origin' in df.columns and 'chronic_med_count' in df.columns and 'medical_record' in df.columns and 'id1' in df.columns:
+    print("Filling chronic_med_count for Medication Order and PROTOCOL rows...")
+    
+    # Get chronic_med_count values from "Chronic Meds" rows, grouped by medical_record and id1
+    chronic_meds_counts = (
+        df[df['order_origin'] == "Chronic Meds"]
+        .groupby(['medical_record', 'id1'])['chronic_med_count']
+        .first()  # Get the first non-null value (should be the same for all rows in the group)
+        .reset_index(name='chronic_med_count_fill')
+    )
+    
+    # Create a mask for rows that need filling
+    mask_to_fill = df['order_origin'].isin(["Medication Order", "PROTOCOL"])
+    
+    # Count how many rows will be affected
+    num_rows_to_fill = mask_to_fill.sum()
+    
+    if num_rows_to_fill > 0 and len(chronic_meds_counts) > 0:
+        # Merge the chronic_med_count values
+        df = df.merge(chronic_meds_counts, on=['medical_record', 'id1'], how='left')
+        
+        # Fill chronic_med_count for Medication Order and PROTOCOL rows with values from Chronic Meds rows
+        # Only update where we have a value from Chronic Meds rows (non-null chronic_med_count_fill)
+        mask_has_fill_value = mask_to_fill & df['chronic_med_count_fill'].notna()
+        df.loc[mask_has_fill_value, 'chronic_med_count'] = df.loc[mask_has_fill_value, 'chronic_med_count_fill']
+        
+        # Drop the temporary column
+        df = df.drop(columns=['chronic_med_count_fill'])
+        
+        print(f"  Filled chronic_med_count for {num_rows_to_fill:,} rows where order_origin is 'Medication Order' or 'PROTOCOL'")
+        print(f"  Used values from {len(chronic_meds_counts):,} unique patient groups (medical_record, id1)")
+    else:
+        print(f"  No rows to fill (rows with Medication Order/PROTOCOL: {num_rows_to_fill:,})")
+else:
+    missing_cols = [col for col in ['order_origin', 'chronic_med_count', 'medical_record', 'id1'] if col not in df.columns]
+    print(f"Warning: Missing columns {missing_cols}, skipping chronic_med_count fill for Medication Order/PROTOCOL")
+
 # Drop all rows where alert_rn_severity = "NeoDRC" (adult-only data) i found some NeoDRC rows in the data because soroka hospital data was not good
 if 'alert_rn_severity' in df.columns:
     rows_before = len(df)
@@ -657,6 +696,19 @@ else:
         print(f"Rows before: {rows_before:,}, Rows after: {rows_after:,}")
     else:
         print("No rows found matching the criteria (alert_status='Stoping_alert' OR dosing_message=2 OR response_type_ud='No_response_fit')")
+
+# Drop all rows where alert_rn_severity = "DT"
+if 'alert_rn_severity' in df.columns:
+    rows_before = len(df)
+    mask_dt = df['alert_rn_severity'] == "DT"
+    if mask_dt.any():
+        num_dropped = mask_dt.sum()
+        df = df[~mask_dt].copy()
+        rows_after = len(df)
+        print(f"Dropped {num_dropped:,} rows where alert_rn_severity = 'DT'")
+        print(f"Rows before: {rows_before:,}, Rows after: {rows_after:,}")
+    else:
+        print("No DT rows found to drop")
 
 df_sample = df.sample(n=int(len(df) * 1.0), random_state=42)
 #df_sample = df.sample(n=int(len(df) * 0.10), random_state=42)
