@@ -3,7 +3,7 @@ import pandas as pd
 from ydata_profiling import ProfileReport
 
 
-df_active_adult = pd.read_csv('alert_analysis/data/main_data_2022/df_main_active_adult_renamed.csv')
+df_active_adult = pd.read_csv('alert_analysis/data/main_data_2022/df_main_active_adult_renamed_new_clean_sample_100pct.csv')
 df_active_adult.shape
 #TODO: create profile report for df_active_adult
 profile = ProfileReport(df_active_adult, title="Data Profiling Report", explorative=False)

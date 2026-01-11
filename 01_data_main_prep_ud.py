@@ -411,7 +411,11 @@ def process_alert_rn_severity(data):
     data.loc[mask, 'Alert_Rn_Severity_cat'] = "NeoDRC"
 
     # Condition 6: DRC types
-    drc_types = ["DRC - Frequency 1", "DRC - Single Dose 1", "DRC - Single Dose 2", "DRC - Max Daily Dose 1"]
+    drc_types = [
+        "DRC - Frequency 1", "DRC - Frequency 2", "DRC - Frequency 3",
+        "DRC - Single Dose 1", "DRC - Single Dose 2", "DRC - Single Dose 3",
+        "DRC - Max Daily Dose 1", "DRC - Max Daily Dose 2", "DRC - Max Daily Dose 3"
+    ]
     mask = data['Module_Alert_Rn'].isin(drc_types)
     data.loc[mask, 'Alert_Rn_Severity_cat'] = "DRC"
 
@@ -447,10 +451,12 @@ def process_alert_rn_severity(data):
 
 def process_below_exceed_dose(data):
     """
-    Creates six new columns indicating dose direction (exceeds/below) for different alert types:
-    1. dose_direction_DRC_Frequency_1
-    2. dose_direction_DRC_Single_Dose_1
-    3. dose_direction_DRC_Max_Daily_Dose_1
+    Creates dose direction columns (exceeds/below) for different alert types:
+    DRC patterns:
+    1. dose_direction_DRC_Frequency_1, 2, 3
+    2. dose_direction_DRC_Single_Dose_1, 2, 3
+    3. dose_direction_DRC_Max_Daily_Dose_1, 2, 3
+    NeoDRC patterns:
     4. dose_direction_NeoDRC_Frequency_1
     5. dose_direction_NeoDRC_Single_Dose_1
     6. dose_direction_NeoDRC_Max_Daily_Dose_1
@@ -464,16 +470,26 @@ def process_below_exceed_dose(data):
         data (pd.DataFrame): Input DataFrame containing 'Module_Alert_Rn' and 'Alert_Message' columns.
 
     Returns:
-        pd.DataFrame: The modified DataFrame with six new dose direction columns.
+        pd.DataFrame: The modified DataFrame with dose direction columns.
     """
     # Ensure 'Alert_Message' column is of string type
     data['Alert_Message'] = data['Alert_Message'].astype(str)
 
     # Define the alert types and their corresponding columns
     alert_types = {
+        # DRC Frequency patterns
         'DRC - Frequency 1': 'dose_direction_DRC_Frequency_1',
+        'DRC - Frequency 2': 'dose_direction_DRC_Frequency_2',
+        'DRC - Frequency 3': 'dose_direction_DRC_Frequency_3',
+        # DRC Single Dose patterns
         'DRC - Single Dose 1': 'dose_direction_DRC_Single_Dose_1',
+        'DRC - Single Dose 2': 'dose_direction_DRC_Single_Dose_2',
+        'DRC - Single Dose 3': 'dose_direction_DRC_Single_Dose_3',
+        # DRC Max Daily Dose patterns
         'DRC - Max Daily Dose 1': 'dose_direction_DRC_Max_Daily_Dose_1',
+        'DRC - Max Daily Dose 2': 'dose_direction_DRC_Max_Daily_Dose_2',
+        'DRC - Max Daily Dose 3': 'dose_direction_DRC_Max_Daily_Dose_3',
+        # NeoDRC patterns
         'NeoDRC - Frequency 1': 'dose_direction_NeoDRC_Frequency_1',
         'NeoDRC - Single Dose 1': 'dose_direction_NeoDRC_Single_Dose_1',
         'NeoDRC - Max Daily Dose 1': 'dose_direction_NeoDRC_Max_Daily_Dose_1'
@@ -497,8 +513,18 @@ def process_below_exceed_dose(data):
 
 def process_drc_subgroup(data):
     """Create DRC_SUB_GROUP and NeoDRC_SUB_GROUP columns based on Module_Alert_Rn."""
-    drc_values = ["DRC - Duration 1", "DRC - Frequency 1", "DRC - Max Daily Dose 1", "DRC - Message 1",
-                  "DRC - Single Dose 1"]
+    drc_values = [
+        # DRC Duration patterns
+        "DRC - Duration 1",
+        # DRC Frequency patterns
+        "DRC - Frequency 1", "DRC - Frequency 2", "DRC - Frequency 3",
+        # DRC Max Daily Dose patterns
+        "DRC - Max Daily Dose 1", "DRC - Max Daily Dose 2", "DRC - Max Daily Dose 3",
+        # DRC Message patterns
+        "DRC - Message 1",
+        # DRC Single Dose patterns
+        "DRC - Single Dose 1", "DRC - Single Dose 2", "DRC - Single Dose 3"
+    ]
     data['DRC_SUB_GROUP'] = np.where(data['Module_Alert_Rn'].isin(drc_values), data['Module_Alert_Rn'], np.nan)
     data['DRC_SUB_GROUP'] = data['DRC_SUB_GROUP'].astype('category')
 
@@ -513,20 +539,57 @@ def process_response_type(data):
     """
     Create ResponseType_cat:
       - If ResponseType contains "Change", set to "Change".
-      - Else if ResponseType equals "Non Alert" and Alert_Message is not missing, set to "Non_stoping_alert".
-      - Otherwise, keep the original ResponseType.
+      - Else if ResponseType equals "Ignore", set to "Ignore".
+      - Else if ResponseType = "Non_alert" and Alert_Message is empty, set to "No_response_need".
+      - Else if ResponseType = "Non_alert" and Alert_Message is not empty, set to "No_documented_response".
+      - Else if Response (response_reasons_codes) has a value, set to "Ignore".
+      - Otherwise, set to "No_response_fit".
     """
-    data['ResponseType_cat'] = np.where(
-        data['ResponseType'].str.contains("Change", na=False),
-        "Change",
-        np.where(
-            (data['ResponseType'] == "Non Alert") & (data['Alert_Message'].notna()),
-            "Non_stoping_alert",
-            data['ResponseType']
-        )
-    )
+    # Initialize ResponseType_cat
+    data['ResponseType_cat'] = "No_response_fit"
+    
+    # Priority 1: If ResponseType contains "Change", set to "Change"
+    mask_change = data['ResponseType'].str.contains("Change", na=False)
+    data.loc[mask_change, 'ResponseType_cat'] = "Change"
+    
+    # Priority 2: If ResponseType equals "Ignore", set to "Ignore"
+    mask_ignore = (data['ResponseType'] == "Ignore")
+    data.loc[mask_ignore & ~mask_change, 'ResponseType_cat'] = "Ignore"
+    
+    # Priority 3: Handle "Non_alert" cases
+    # Check for NaN, empty string, or string representation of NaN/None
+    alert_msg_str = data['Alert_Message'].astype(str).str.strip()
+    mask_alert_empty = (data['Alert_Message'].isna() | 
+                        (alert_msg_str == '') | 
+                        (alert_msg_str == 'nan') |
+                        (alert_msg_str == 'None'))
+    mask_alert_not_empty = ~mask_alert_empty
+    
+    # If ResponseType = "Non_alert" and Alert_Message is empty → "No_response_need"
+    mask_non_alert_empty = (data['ResponseType'] == "Non_alert") & mask_alert_empty
+    mask_not_set_yet = ~mask_change & ~mask_ignore
+    data.loc[mask_non_alert_empty & mask_not_set_yet, 'ResponseType_cat'] = "No_response_need"
+    
+    # If ResponseType = "Non_alert" and Alert_Message is not empty → "No_documented_response"
+    mask_non_alert_not_empty = (data['ResponseType'] == "Non_alert") & mask_alert_not_empty
+    data.loc[mask_non_alert_not_empty & mask_not_set_yet, 'ResponseType_cat'] = "No_documented_response"
+    
+    # Priority 4: If Response has a value, set to "Ignore" (but not if already set)
+    if 'Response' in data.columns:
+        response_str = data['Response'].astype(str).str.strip()
+        mask_has_response = (data['Response'].notna() & 
+                           (response_str != '') & 
+                           (response_str != 'nan') &
+                           (response_str != 'None'))
+        # Only set to "Ignore" if not already categorized and Response has a value
+        mask_not_set = (data['ResponseType_cat'] == "No_response_fit")
+        data.loc[mask_has_response & mask_not_set, 'ResponseType_cat'] = "Ignore"
+    else:
+        print("Warning: 'Response' column not found. Skipping 'ignore' assignment based on response_reasons_codes.")
+    
     data['ResponseType_cat'] = data['ResponseType_cat'].astype('category')
     print("ResponseType_cat processed.")
+
 
 
 def save_data(data, output_path):

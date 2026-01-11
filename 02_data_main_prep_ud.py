@@ -7,6 +7,7 @@ from charlson_index import calculate_cci  # Assumes you have this module availab
 
 def load_main_data():
     print("Loading main data from CSV...")
+    # Use Python engine for large files to avoid memory issues
     df = pd.read_csv('alert_analysis/data_process/data_main_prep.csv')
     assert not df.empty, "Loaded main data is empty!"
     return df
@@ -157,7 +158,20 @@ def add_first_word_columns(data):
 
 def process_basic_atc():
     print("Processing BASIC_NAME_ATC data...")
-    basic_atc = pd.read_csv("alert_analysis/data/BASIC_NAME_ATC.csv")
+    relative_path = "alert_analysis/data/BASIC NAME - ATC CODE.xlsx"
+    absolute_path = "/Users/eveadam/Dropbox/PHD/alert_analysis/data/BASIC NAME - ATC CODE.xlsx"
+    
+    try:
+        basic_atc = pd.read_excel(relative_path, engine='openpyxl')
+        print(f"Loaded file from relative path: {relative_path}")
+    except FileNotFoundError:
+        try:
+            basic_atc = pd.read_excel(absolute_path, engine='openpyxl')
+            print(f"Relative path not found. Loaded file from absolute path: {absolute_path}")
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                f"BASIC NAME - ATC CODE.xlsx not found at either relative path '{relative_path}' or absolute path '{absolute_path}'."
+            ) from e
     basic_atc = basic_atc[["ATC5", "BASIC NAME"]]
     basic_atc = basic_atc.drop_duplicates()
     basic_atc = basic_atc.rename(columns={"BASIC NAME": "BASIC_NAME_EXT"})

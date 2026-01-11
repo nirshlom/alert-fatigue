@@ -28,7 +28,10 @@ def get_count_columns(df: pd.DataFrame) -> list:
 
 
 def convert_unit_cat(df: pd.DataFrame, col):
-    df[col] = df[col].apply(lambda x: 1 if x > 0 else 0)
+    """Convert numeric unit count columns to binary (0/1) format."""
+    # Only convert if the column is numeric
+    if df[col].dtype in ['int64', 'float64', 'int32', 'float32']:
+        df[col] = df[col].apply(lambda x: 1 if x > 0 else 0)
     return df
 
 def group_and_save_patient_data(df: pd.DataFrame) -> None:
@@ -46,6 +49,7 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         'age',  # renamed from AGE_num
         'age_category',  # renamed from Age_cat
         'unit_category',  # renamed from UnitName_cat
+        'unit_category_ud',# renamed from UnitName_cat_ud 
         'chronic_diagnosis',  # renamed from DiagnosisInReception
         'hospital_diagnosis',  # renamed from HospDiagnosis
         'alert_type',  # renamed from Alert_type
@@ -58,11 +62,27 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         'neo_dosing_single_dose',  
         'neo_dosing_max_daily_dose',  
         'hospital_name',
-        'medication_orders_hospatalization',
+        'chronic_med_ud',
+        'medication_orders_hospitalization',
         'survival_rate_10y_age_adj',
         'charlson_score_age_adj',
         'hospital_days',
         'num_of_chronic_diagnosis',
+        'kidney_disease',
+        'hepatic_disease',
+        'diabetes_disease',
+        'ischemic_heart_disease',
+        'copd_disease',
+        'cerebrovascular_disease',
+        'peptic_ulcer_disease',
+        'dementia_disease',
+        'oncological_disease',
+        'hemato_oncological_disease',
+        'hypertension_disease',
+        'atrial_fibrillation_disease',
+        'hyperlipidemia_disease',
+        'congestive_heart_failure_disease',
+        'obesity_disease',
     ] + count_columns  # Add all count columns
     
     missing_columns = [col for col in required_columns if col not in df.columns]
@@ -79,13 +99,15 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
     alert_types = ["Non_alert", "Non_Error_alert", "Error_Alert"]
     
     # Define response types
-    response_types = ["Non_alert_response", "Non_stoping_alert", "Ignore", "Change"]
+    response_type_ud_categories = ["No_response_need", "Ignore", "Change"]  # pyright: ignore[reportUnusedVariable, reportUnusedVariable]
     
     # Create base aggregation dictionary
     agg_dict = {
         'gender': 'first',
         'age': 'first',
         'age_category': 'first',
+        'unit_category_ud': 'first',  # Add unit_category_ud
+        'chronic_med_ud': 'first',  # Add chronic_med_ud
         'response_reasons_other_text': lambda x: '; '.join(x.dropna().unique()),
         'dosing_frequency': 'sum',
         'dosing_single_dose': 'sum',
@@ -96,7 +118,23 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         'hospital_name': lambda x: x.nunique(),  # Count unique hospitals
         'survival_rate_10y_age_adj': 'mean',
         'charlson_score_age_adj': 'mean',
-        'hospital_days': 'mean'
+        'hospital_days': 'mean',
+        # Add all disease columns
+        'kidney_disease': 'first',
+        'hepatic_disease': 'first',
+        'diabetes_disease': 'first',
+        'ischemic_heart_disease': 'first',
+        'copd_disease': 'first',
+        'cerebrovascular_disease': 'first',
+        'peptic_ulcer_disease': 'first',
+        'dementia_disease': 'first',
+        'oncological_disease': 'first',
+        'hemato_oncological_disease': 'first',
+        'hypertension_disease': 'first',
+        'atrial_fibrillation_disease': 'first',
+        'hyperlipidemia_disease': 'first',
+        'congestive_heart_failure_disease': 'first',
+        'obesity_disease': 'first',
     }
     
     # Add count columns with mean aggregation
@@ -133,14 +171,14 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
     
     # Count responses by type for each patient
     print("\nResponse type counts in original data:")
-    print(df['response_type'].value_counts())
+    print(df['response_type_ud'].value_counts())
     
-    response_counts = df.groupby(['id1', 'response_type']).size().unstack(fill_value=0)
+    response_counts = df.groupby(['id1', 'response_type_ud']).size().unstack(fill_value=0)
     print("\nResponse counts per patient (first 5 rows):")
     print(response_counts.head())
     
     # Merge response counts with grouped data
-    for response in response_types:
+    for response in response_type_ud_categories:
         grouped[f'is_{response}'] = grouped['id1'].map(response_counts[response])
     
     # Fill NaN values with 0 for the new count columns
@@ -150,7 +188,7 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
     #TODO: after the aggregation, convert all count_columns from get_count_columns(df)  to boolean. 0=False, >0=True. rename the columns to include _bool suffix specifically for columns with disease name in the column name.
     
     print("\nFinal counts in grouped data (first 5 rows):")
-    print(grouped[['id1'] + [f'unit_{unit}' for unit in unit_categories] + [f'is_{alert}' for alert in alert_types] + [f'is_{response}' for response in response_types]].head())
+    print(grouped[['id1'] + [f'unit_{unit}' for unit in unit_categories] + [f'is_{alert}' for alert in alert_types] + [f'is_{response}' for response in response_type_ud_categories]].head())
     
     # Rename columns to include aggregation type
     rename_dict = {
@@ -193,8 +231,8 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
         grouped[bool_col] = grouped[mean_col] > 0
         grouped = grouped.drop(columns=[mean_col])  # drop the mean column
 
-    # Convert all unit columns to binary (0/1) format
-    unit_columns = [col for col in grouped.columns if col.startswith('unit_')]
+    # Convert all unit count columns (but not unit_category_ud) to binary (0/1) format
+    unit_columns = [col for col in grouped.columns if col.startswith('unit_') and col != 'unit_category_ud']
     for col in unit_columns:
         grouped = convert_unit_cat(df=grouped, col=col)
     
@@ -210,7 +248,7 @@ def group_and_save_patient_data(df: pd.DataFrame) -> None:
 
 def main():
     # File paths
-    input_file = "alert_analysis/data/main_data_2022/df_main_active_adult_renamed.csv"
+    input_file = "alert_analysis/data/main_data_2022/df_main_active_adult_renamed_new_clean_sample_100pct.csv"
     output_file = "alert_analysis/data/main_data_2022/df_patients_level_data.csv"
     
     # Read data
