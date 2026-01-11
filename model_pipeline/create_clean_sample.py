@@ -718,5 +718,6 @@ df_sample = df.sample(n=int(len(df) * 1.0), random_state=42)
 #print(f"Saved {len(df_sample):,} rows")
 
 # save 100% sample
-df_sample.to_csv("C:/Users/hibaa/Documents/GitHub/alert-fatigue/alert_analysis/data/main_data_2022/df_main_active_adult_renamed_new_clean_sample_100pct.csv", index=False)
+output_path = os.path.join(project_root, "alert_analysis", "data", "main_data_2022", "df_main_active_adult_renamed_new_clean_sample_100pct.csv")
+df_sample.to_csv(output_path, index=False)
 print(f"Saved {len(df_sample):,} rows")

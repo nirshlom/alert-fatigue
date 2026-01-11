@@ -16,6 +16,12 @@ from .evaluation.plots import (
     plot_or_forest, plot_pr_curve, plot_roc_curve, plot_threshold_metrics
 )
 from .models.statsmodels_logit import StatsmodelsLogitModel
+# Conditionally import LME4GLMMModel
+try:
+    from .models.lme4_glmm import LME4GLMMModel
+    LME4_AVAILABLE = True
+except ImportError:
+    LME4_AVAILABLE = False
 from .preprocess import Preprocessor
 from .preprocess_onehot import OneHotPreprocessor
 from .reporting.coefficients import (
@@ -218,16 +224,65 @@ def run_full_training(config: Dict[str, Any]) -> Dict:
     # Run preprocessing
     train_df, eval_df, test_df, preprocessing_artifacts = run_preprocessing_only(config, run_dir)
     
-    # Train model
-    print("Training logistic regression model...")
-    model = StatsmodelsLogitModel(use_glm=config['use_glm'])
-    
     # Use updated feature columns if one-hot encoding was used
     feature_columns_to_use = preprocessing_artifacts.get('updated_feature_columns', config['feature_columns'])
     train_features = train_df[feature_columns_to_use]
     train_target = train_df[config['target_column']]
     
-    model.fit(train_features, train_target)
+    # Train model based on config
+    model_type = config.get('model_type', 'statsmodels')
+    
+    if model_type == 'lme4':
+        if not LME4_AVAILABLE:
+            raise ImportError(
+                "LME4GLMMModel is not available. Please install rpy2 and R with lme4 package.\n"
+                "Install: pip install rpy2\n"
+                "In R: install.packages('lme4')"
+            )
+        
+        print("Training GLMM model (lme4)...")
+        model = LME4GLMMModel(
+            random_effects=config['random_effects'],
+            family=config['glmm_family'],
+            link=config['glmm_link'],
+            control=config.get('glmm_control')
+        )
+        
+        # Prepare grouping variables for random effects
+        grouping_columns = config.get('grouping_columns')
+        if grouping_columns is not None:
+            if isinstance(grouping_columns, str):
+                # Single grouping column
+                grouping_columns_list = [grouping_columns]
+            elif isinstance(grouping_columns, list):
+                # Multiple grouping columns
+                grouping_columns_list = grouping_columns
+            else:
+                raise ValueError(f"grouping_columns must be str or list, got {type(grouping_columns)}")
+            
+            # Check for overlap between feature_columns and grouping_columns
+            feature_cols_set = set(feature_columns_to_use)
+            grouping_cols_set = set(grouping_columns_list)
+            overlap = feature_cols_set & grouping_cols_set
+            
+            if overlap:
+                print(f"⚠️  NOTE: Columns {list(overlap)} appear in both feature_columns and grouping_columns.")
+                print(f"    They will be used as BOTH fixed effects (from feature_columns) AND random effects (from grouping_columns).")
+                print(f"    This is valid but uncommon. Typically, use them as EITHER fixed OR random effects.")
+            
+            train_groups = train_df[grouping_columns_list]
+        else:
+            # If no grouping columns specified, try to infer from random_effects formula
+            # This is a simple heuristic - user should specify grouping_columns explicitly
+            train_groups = None
+            print("⚠️  WARNING: No grouping_columns specified. Make sure grouping variables are in your data.")
+        
+        model.fit(train_features, train_target, groups=train_groups)
+        
+    else:  # statsmodels
+        print("Training logistic regression model (statsmodels)...")
+        model = StatsmodelsLogitModel(use_glm=config['use_glm'])
+        model.fit(train_features, train_target)
     
     # Get model summary
     model_summary = model.get_model_summary()
@@ -252,7 +307,19 @@ def run_full_training(config: Dict[str, Any]) -> Dict:
     eval_features = eval_df[feature_columns_to_use]
     eval_target = eval_df[config['target_column']]
     
-    eval_proba = model.predict_proba(eval_features)
+    # For GLMM, need to pass grouping variables if available
+    if model_type == 'lme4' and config.get('grouping_columns') is not None:
+        grouping_columns = config['grouping_columns']
+        if isinstance(grouping_columns, str):
+            eval_groups = eval_df[grouping_columns]
+        elif isinstance(grouping_columns, list):
+            eval_groups = eval_df[grouping_columns]
+        else:
+            eval_groups = None
+        eval_proba = model.predict_proba(eval_features, groups=eval_groups)
+    else:
+        eval_proba = model.predict_proba(eval_features)
+    
     eval_scores = eval_proba[:, 1]  # Probability of positive class
     
     # Calculate evaluation metrics
@@ -334,8 +401,11 @@ def run_full_training(config: Dict[str, Any]) -> Dict:
             'features': len(config['feature_columns'])
         },
         'model_info': {
-            'model_type': 'Logistic Regression (Statsmodels)',
-            'use_glm': config['use_glm'],
+            'model_type': config.get('model_type', 'statsmodels'),
+            'use_glm': config.get('use_glm', True) if config.get('model_type', 'statsmodels') == 'statsmodels' else None,
+            'random_effects': config.get('random_effects') if config.get('model_type') == 'lme4' else None,
+            'glmm_family': config.get('glmm_family') if config.get('model_type') == 'lme4' else None,
+            'glmm_link': config.get('glmm_link') if config.get('model_type') == 'lme4' else None,
             'aic': aic_bic['aic'],
             'bic': aic_bic['bic']
         },

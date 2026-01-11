@@ -1,7 +1,12 @@
 import pandas as pd
+import os
+
+# Get the script's directory (project root)
+project_root = os.path.dirname(os.path.abspath(__file__))
 
 #TODO: Load the data: df_main_active_adult_renamed_new_clean_sample_100pct.csv, this order level data only active adults with final data for alert analysis
-df_main_active_adult = pd.read_csv(r'C:\Users\hibaa\Documents\GitHub\alert-fatigue\alert_analysis\data\main_data_2022\df_main_active_adult_renamed_new_clean_sample_100pct.csv')
+input_path = os.path.join(project_root, "alert_analysis", "data", "main_data_2022", "df_main_active_adult_renamed_new_clean_sample_100pct.csv")
+df_main_active_adult = pd.read_csv(input_path)
 print(df_main_active_adult.shape)
 df_main_active_adult.head(10)
 
@@ -27,6 +32,7 @@ crosstab_table
 
 
 # Save df_filtered_response_type_ignore_change.csv
-df_filtered_response_type.to_csv("C:/Users/hibaa/Documents/GitHub/alert-fatigue/alert_analysis/data/main_data_2022/response_type_ignore_change.csv", index=False)
+output_path = os.path.join(project_root, "alert_analysis", "data", "main_data_2022", "response_type_ignore_change.csv")
+df_filtered_response_type.to_csv(output_path, index=False)
 print(f"Saved {len(df_filtered_response_type):,} rows")
 
