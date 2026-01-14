@@ -8,6 +8,13 @@ Prerequisites:
 1. Install rpy2: pip install rpy2
 2. Install R: https://www.r-project.org/
 3. Install lme4 in R: install.packages("lme4")
+4. (Windows only) Install Microsoft Visual C++ Redistributables:
+   https://aka.ms/vs/17/release/vc_redist.x64.exe
+
+Troubleshooting:
+If you encounter DLL loading errors on Windows (e.g., "unable to load shared object"),
+this is usually due to missing Visual C++ Redistributables. See FIX_R_DLL_ISSUE.md
+for detailed solutions.
 """
 
 import pandas as pd
