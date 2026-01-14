@@ -23,7 +23,7 @@ def get_config() -> Dict[str, Any]:
     # ============================================================================
     config = {
         # Input data
-        'input_csv_path': "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_clean_sample_10pct.csv",
+        'input_csv_path': "../alert_analysis/data/main_data_2022/df_main_active_adult_renamed_new_clean_sample_10pct.csv",
         'date_column': "time_prescribing_order",
         'target_column': "alert_status_binary",
         'feature_columns': ["age", "gender", "hospital_days", "charlson_score",
@@ -31,7 +31,7 @@ def get_config() -> Dict[str, Any]:
 
         # Optional: specify reference category per categorical feature
         # Example: {'gender': 'F', 'unit_category_ud': 'ICU'}
-        'categorical_reference_levels': {'gender': 'FEMALE', 'unit_category_ud': 'Geriatric'},
+        'categorical_reference_levels': {'gender': 'FEMALE', 'unit_category_ud': 'OTHER'},
         
         # Data splitting
         'train_frac': 0.7,
